@@ -135,7 +135,7 @@ const Home: React.FC = () => {
         </Typography>
         <Grid container spacing={3} sx={{ mt: 2 }}>
           {quickStats.map((stat, index) => (
-            <Grid size={{ xs: 6, md: 3 }} key={index}>
+            <Grid xs={6} md={3} key={index}>
               <Card
                 sx={{
                   textAlign: "center",
@@ -172,7 +172,7 @@ const Home: React.FC = () => {
         </Typography>
         <Grid container spacing={4} sx={{ mt: 2 }}>
           {features.map((feature, index) => (
-            <Grid size={{ xs: 12, md: 6, lg: 4 }} key={index}>
+            <Grid xs={12} md={6} lg={4} key={index}>
               <Card
                 sx={{
                   height: "100%",

@@ -9,11 +9,16 @@ import Navbar from "./components/Navbar";
 import AuthWrapper from "./components/AuthWrapper";
 import { AuthProvider } from "./contexts/AuthContext";
 import Home from "./pages/Home";
+import Dashboard from "./pages/Dashboard";
 import CropDiagnosis from "./pages/CropDiagnosis";
 import Community from "./pages/Community";
 import Weather from "./pages/Weather";
 import Learning from "./pages/Learning";
 import VoiceChat from "./pages/VoiceChat";
+import CropCalendar from "./pages/CropCalendar";
+import MarketPrices from "./pages/MarketPrices";
+import NotificationsPage from "./pages/NotificationsPage";
+import ProfilePage from "./pages/ProfilePage";
 
 // Create theme with Nigerian colors
 const theme = createTheme({
@@ -66,11 +71,19 @@ function App() {
               <Box component="main" sx={{ flexGrow: 1, pt: 2 }}>
                 <Routes>
                   <Route path="/" element={<Home />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/diagnosis" element={<CropDiagnosis />} />
                   <Route path="/community" element={<Community />} />
                   <Route path="/weather" element={<Weather />} />
                   <Route path="/learning" element={<Learning />} />
                   <Route path="/voice-chat" element={<VoiceChat />} />
+                  <Route path="/calendar" element={<CropCalendar />} />
+                  <Route path="/market" element={<MarketPrices />} />
+                  <Route
+                    path="/notifications"
+                    element={<NotificationsPage />}
+                  />
+                  <Route path="/profile" element={<ProfilePage />} />
                 </Routes>
               </Box>
             </Box>

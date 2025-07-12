@@ -17,10 +17,6 @@ import {
   ListItemText,
   Grid,
   TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -35,12 +31,9 @@ import {
   Agriculture,
   ExpandMore,
   Spa,
-  Science,
   LocalFlorist,
-  Phone,
-  WhatsApp,
 } from "@mui/icons-material";
-import axios from "axios";
+import { cropsAPI } from "../utils/api";
 
 interface DiagnosisResult {
   success: boolean;
@@ -85,80 +78,6 @@ const CropDiagnosis: React.FC = () => {
   const [plantingDate, setPlantingDate] = useState("");
   const [growthStage, setGrowthStage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Nigerian states
-  const nigerianStates = [
-    "Abia",
-    "Adamawa",
-    "Akwa Ibom",
-    "Anambra",
-    "Bauchi",
-    "Bayelsa",
-    "Benue",
-    "Borno",
-    "Cross River",
-    "Delta",
-    "Ebonyi",
-    "Edo",
-    "Ekiti",
-    "Enugu",
-    "FCT",
-    "Gombe",
-    "Imo",
-    "Jigawa",
-    "Kaduna",
-    "Kano",
-    "Katsina",
-    "Kebbi",
-    "Kogi",
-    "Kwara",
-    "Lagos",
-    "Nasarawa",
-    "Niger",
-    "Ogun",
-    "Ondo",
-    "Osun",
-    "Oyo",
-    "Plateau",
-    "Rivers",
-    "Sokoto",
-    "Taraba",
-    "Yobe",
-    "Zamfara",
-  ];
-
-  // Nigerian crops
-  const nigerianCrops = [
-    "cassava",
-    "yam",
-    "maize",
-    "rice",
-    "plantain",
-    "cocoa",
-    "oil_palm",
-    "tomato",
-    "pepper",
-    "okra",
-    "onion",
-    "cowpea",
-    "groundnut",
-    "soybean",
-    "millet",
-    "sorghum",
-    "sweet_potato",
-    "banana",
-    "ginger",
-    "garlic",
-    "cotton",
-  ];
-
-  const growthStages = [
-    "seedling",
-    "vegetative",
-    "flowering",
-    "fruiting",
-    "maturity",
-  ];
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -209,15 +128,7 @@ const CropDiagnosis: React.FC = () => {
       formData.append("growthStage", growthStage);
       formData.append("userId", "current-user-id"); // Replace with actual user ID
 
-      const response = await axios.post(
-        "http://localhost:5000/api/crops/diagnose",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await cropsAPI.diagnoseCrop(formData);
 
       if (response.data.success) {
         setResult(response.data);
@@ -290,7 +201,7 @@ const CropDiagnosis: React.FC = () => {
 
       <Grid container spacing={4}>
         {/* Upload Section */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid xs={12} md={6}>
           <Paper sx={{ p: 3, height: "fit-content" }}>
             <Typography variant="h5" gutterBottom fontWeight="bold">
               Upload Crop Image
@@ -335,6 +246,32 @@ const CropDiagnosis: React.FC = () => {
                 multiline
                 rows={2}
                 placeholder="Describe what you observe..."
+              />
+              <TextField
+                fullWidth
+                label="Planting Date (optional)"
+                value={plantingDate}
+                onChange={(e) => setPlantingDate(e.target.value)}
+                margin="normal"
+                variant="outlined"
+                type="date"
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Growth Stage (optional)"
+                value={growthStage}
+                onChange={(e) => setGrowthStage(e.target.value)}
+                margin="normal"
+                variant="outlined"
+                placeholder="e.g., Seedling, Flowering, Fruiting"
+                InputProps={{
+                  startAdornment: (
+                    <Spa sx={{ mr: 1, color: "action.active" }} />
+                  ),
+                }}
               />
             </Box>
 
@@ -431,7 +368,7 @@ const CropDiagnosis: React.FC = () => {
         </Grid>
 
         {/* Results Section */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid xs={12} md={6}>
           {result ? (
             <Paper sx={{ p: 3 }}>
               <Typography variant="h5" gutterBottom fontWeight="bold">

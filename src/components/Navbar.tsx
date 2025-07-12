@@ -19,6 +19,7 @@ import {
   ListItemText,
   ListItemIcon,
   Chip,
+  Badge,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -33,6 +34,10 @@ import {
   Home,
   Camera,
   Flag,
+  Schedule,
+  AttachMoney,
+  Notifications,
+  Person,
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -60,11 +65,14 @@ const Navbar: React.FC = () => {
 
   const navigationItems = [
     { path: "/", label: "Home", icon: <Home /> },
+    { path: "/dashboard", label: "Dashboard", icon: <Agriculture /> },
     { path: "/diagnosis", label: "Crop Diagnosis", icon: <Camera /> },
     { path: "/community", label: "Community", icon: <Forum /> },
     { path: "/weather", label: "Weather", icon: <WbSunny /> },
     { path: "/learning", label: "Learning", icon: <School /> },
     { path: "/voice-chat", label: "Voice Chat", icon: <RecordVoiceOver /> },
+    { path: "/calendar", label: "Calendar", icon: <Schedule /> },
+    { path: "/market", label: "Market", icon: <AttachMoney /> },
   ];
 
   const renderNavItems = () => (
@@ -173,7 +181,17 @@ const Navbar: React.FC = () => {
           )}
 
           {user && (
-            <Box sx={{ ml: 2 }}>
+            <Box sx={{ ml: 2, display: "flex", alignItems: "center", gap: 1 }}>
+              <IconButton
+                size="large"
+                color="inherit"
+                component={Link}
+                to="/notifications"
+              >
+                <Badge badgeContent={0} color="error">
+                  <Notifications />
+                </Badge>
+              </IconButton>
               <IconButton
                 size="large"
                 edge="end"
@@ -183,7 +201,7 @@ const Navbar: React.FC = () => {
                 <Avatar
                   sx={{ width: 32, height: 32, bgcolor: "secondary.main" }}
                 >
-                  {user.name.charAt(0).toUpperCase()}
+                  {user.name?.charAt(0).toUpperCase() || "U"}
                 </Avatar>
               </IconButton>
               <Menu
@@ -193,12 +211,29 @@ const Navbar: React.FC = () => {
               >
                 <MenuItem disabled>
                   <AccountCircle sx={{ mr: 1 }} />
-                  {user.name}
+                  {user.name || user.email}
                 </MenuItem>
                 <MenuItem disabled>
                   <Typography variant="body2" color="text.secondary">
-                    {user.location.state}, Nigeria
+                    Nigeria
                   </Typography>
+                </MenuItem>
+                <Divider />
+                <MenuItem
+                  component={Link}
+                  to="/profile"
+                  onClick={handleMenuClose}
+                >
+                  <Person sx={{ mr: 1 }} />
+                  Profile
+                </MenuItem>
+                <MenuItem
+                  component={Link}
+                  to="/notifications"
+                  onClick={handleMenuClose}
+                >
+                  <Notifications sx={{ mr: 1 }} />
+                  Notifications
                 </MenuItem>
                 <Divider />
                 <MenuItem onClick={handleLogout}>

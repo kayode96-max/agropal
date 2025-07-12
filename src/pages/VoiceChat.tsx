@@ -8,7 +8,6 @@ import {
   TextField,
   List,
   ListItem,
-  ListItemText,
   Chip,
   Alert,
   IconButton,
@@ -22,7 +21,6 @@ import {
   MicOff,
   Send,
   VolumeUp,
-  Translate,
   Agriculture,
   Psychology,
 } from "@mui/icons-material";
@@ -98,7 +96,7 @@ const VoiceChat: React.FC = () => {
     if (recognitionRef.current) {
       recognitionRef.current.lang = getLanguageCode(selectedLanguage);
     }
-  }, [selectedLanguage]);
+  }, [selectedLanguage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getLanguageCode = (lang: string) => {
     const langMap: { [key: string]: string } = {

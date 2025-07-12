@@ -14,6 +14,7 @@ interface User {
   phone?: string;
   name: string;
   role: string;
+  avatar?: string;
   location: {
     state: string;
     localGovernment: string;
@@ -53,7 +54,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // API base URL
 const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+  process.env.REACT_APP_API_URL || "http://localhost:5001/api";
 
 // Axios instance
 const api = axios.create({
@@ -100,7 +101,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await api.post("/auth/login", { email, password });
+      const response = await api.post("/auth/login", {
+        identifier: email,
+        password,
+      });
       const { token: authToken, user: userData } = response.data;
 
       setToken(authToken);

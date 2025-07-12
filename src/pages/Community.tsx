@@ -1,147 +1,150 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Container,
   Typography,
   Box,
   Paper,
-  Button,
-  Card,
-  CardContent,
+  TextField,
   IconButton,
-  Chip,
   Avatar,
+  Chip,
+  Button,
+  Menu,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  Badge,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   Grid,
-  Pagination,
-  InputAdornment,
-  Fab,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Tabs,
-  Tab,
-  Alert,
+  Tooltip,
+  Divider,
 } from "@mui/material";
 import {
-  ThumbUp,
-  ThumbDown,
-  Comment,
-  Add,
-  Search,
-  LocationOn,
-  AccessTime,
-  Verified,
-  Warning,
-  HelpOutline,
-  Translate,
-  TrendingUp,
-  Agriculture,
-  GroupWork,
+  Send,
+  MoreVert,
+  Person,
+  Settings,
+  Mic,
+  MicOff,
+  Image as ImageIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import { useAuth } from "../contexts/AuthContext";
 
-interface CommunityPost {
-  id: number;
-  title: string;
+interface ChatMessage {
+  id: string;
   content: string;
-  author: string;
-  location: string;
-  createdAt: string;
-  votes: number;
-  replies: Reply[];
-  tags: string[];
-  category: string;
-  cropType?: string;
-  language?: string;
-  aiModeration: {
-    status: string;
-    confidence: number;
+  author: {
+    id: string;
+    name: string;
+    avatar?: string;
+    location?: string;
+    isOnline?: boolean;
+  };
+  timestamp: string;
+  type: "text" | "image" | "voice" | "system";
+  attachments?: string[];
+  reactions?: { [emoji: string]: string[] }; // emoji -> user ids
+  isEdited?: boolean;
+  replyTo?: string;
+  metadata?: {
+    cropType?: string;
+    category?: string;
+    location?: string;
+    aiTag?: string;
   };
 }
 
-interface Reply {
-  id: number;
-  content: string;
-  author: string;
-  createdAt: string;
-  votes: number;
-  aiTag: string;
-  language?: string;
+interface OnlineUser {
+  id: string;
+  name: string;
+  avatar?: string;
+  location?: string;
+  isTyping?: boolean;
 }
 
-interface Category {
+interface ChatRoom {
   id: string;
   name: string;
   description: string;
   icon: string;
+  memberCount: number;
+  isActive: boolean;
 }
 
-interface NigerianState {
-  code: string;
-  name: string;
-  zone: string;
-  crops: string[];
-}
+// Nigerian chat rooms
+const defaultRooms: ChatRoom[] = [
+  {
+    id: "general",
+    name: "General Chat",
+    description: "General farming discussions",
+    icon: "💬",
+    memberCount: 247,
+    isActive: true,
+  },
+  {
+    id: "cassava",
+    name: "Cassava Farmers",
+    description: "Cassava growing tips and issues",
+    icon: "🍠",
+    memberCount: 156,
+    isActive: true,
+  },
+  {
+    id: "rice",
+    name: "Rice Farmers",
+    description: "Rice cultivation and processing",
+    icon: "🌾",
+    memberCount: 98,
+    isActive: true,
+  },
+  {
+    id: "market",
+    name: "Market Prices",
+    description: "Current market prices and trends",
+    icon: "💰",
+    memberCount: 203,
+    isActive: true,
+  },
+  {
+    id: "weather",
+    name: "Weather Updates",
+    description: "Weather alerts and farming advice",
+    icon: "🌦️",
+    memberCount: 187,
+    isActive: true,
+  },
+  {
+    id: "help",
+    name: "Help & Support",
+    description: "Get help with farming issues",
+    icon: "❓",
+    memberCount: 134,
+    isActive: true,
+  },
+];
 
 const Community: React.FC = () => {
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
-  const [newPostOpen, setNewPostOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedState, setSelectedState] = useState("");
-  const [selectedCrop, setSelectedCrop] = useState("");
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [currentRoom, setCurrentRoom] = useState<ChatRoom | null>(null);
+  const [rooms, setRooms] = useState<ChatRoom[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
-  const [sortBy, setSortBy] = useState("recent");
-  const [tabValue, setTabValue] = useState(0);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
-  // Nigerian-specific data
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [states, setStates] = useState<NigerianState[]>([]);
-  const [trending, setTrending] = useState<any[]>([]);
-
-  const [newPost, setNewPost] = useState({
-    title: "",
-    content: "",
-    category: "",
-    cropType: "",
-    tags: "",
-    location: "",
-    language: "en",
-  });
-  const [newReply, setNewReply] = useState("");
-
-  // Nigerian crops list
-  const nigerianCrops = [
-    "cassava",
-    "yam",
-    "maize",
-    "rice",
-    "plantain",
-    "cocoa",
-    "oil_palm",
-    "tomato",
-    "pepper",
-    "okra",
-    "onion",
-    "cowpea",
-    "groundnut",
-    "soybean",
-    "millet",
-    "sorghum",
-    "sweet_potato",
-    "banana",
-    "ginger",
-    "garlic",
-  ];
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Language options
   const languages = [
@@ -151,769 +154,660 @@ const Community: React.FC = () => {
     { code: "yo", name: "Yoruba", flag: "🇳🇬" },
   ];
 
-  // Fetch initial data
+  // Initialize rooms and join general chat
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const [categoriesRes, statesRes, trendingRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/community/categories"),
-          axios.get("http://localhost:5000/api/community/states"),
-          axios.get("http://localhost:5000/api/community/trending"),
-        ]);
+    setRooms(defaultRooms);
+    setCurrentRoom(defaultRooms[0]);
 
-        if (categoriesRes.data.success)
-          setCategories(categoriesRes.data.categories);
-        if (statesRes.data.success) setStates(statesRes.data.states);
-        if (trendingRes.data.success) setTrending(trendingRes.data.trending);
-      } catch (error) {
-        console.error("Failed to fetch initial data:", error);
-      }
-    };
+    // Mock online users for demonstration
+    setOnlineUsers([
+      { id: "1", name: "Adamu Ibrahim", location: "Kano" },
+      { id: "2", name: "Ngozi Okafor", location: "Enugu" },
+      { id: "3", name: "Fatima Aliyu", location: "Sokoto" },
+      { id: "4", name: "Chike Okonkwo", location: "Anambra" },
+      { id: "5", name: "Hauwa Bello", location: "Kaduna" },
+    ]);
 
-    fetchInitialData();
+    // Mock messages for demonstration
+    setMessages([
+      {
+        id: "1",
+        content:
+          "Good morning everyone! How is your cassava farm doing this season?",
+        author: { id: "1", name: "Adamu Ibrahim", location: "Kano" },
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        type: "text",
+        reactions: {},
+        metadata: { cropType: "cassava" },
+      },
+      {
+        id: "2",
+        content:
+          "Morning brother! My cassava is doing well. The rains have been good this year. How about yours?",
+        author: { id: "2", name: "Ngozi Okafor", location: "Enugu" },
+        timestamp: new Date(Date.now() - 3000000).toISOString(),
+        type: "text",
+        reactions: {},
+      },
+      {
+        id: "3",
+        content:
+          "I'm having some issues with pests. Any organic solutions you can recommend?",
+        author: { id: "3", name: "Fatima Aliyu", location: "Sokoto" },
+        timestamp: new Date(Date.now() - 1800000).toISOString(),
+        type: "text",
+        reactions: {},
+      },
+    ]);
   }, []);
 
-  const fetchPosts = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        "http://localhost:5000/api/community/posts",
-        {
-          params: {
-            page: currentPage,
-            limit: 10,
-            search: searchTerm,
-            category: selectedCategory,
-            state: selectedState,
-            cropType: selectedCrop,
-            language: selectedLanguage,
-            sortBy,
-          },
-        }
-      );
-
-      if (response.data.success) {
-        setPosts(response.data.posts);
-        setTotalPages(response.data.pagination.totalPages);
-      }
-    } catch (error) {
-      console.error("Failed to fetch posts:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    currentPage,
-    searchTerm,
-    selectedCategory,
-    selectedState,
-    selectedCrop,
-    selectedLanguage,
-    sortBy,
-  ]);
+  // Auto-scroll to bottom when new messages arrive
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    scrollToBottom();
+  }, [messages]);
 
-  const handleVote = async (postId: number, type: "up" | "down") => {
-    try {
-      const response = await axios.post(
-        `http://localhost:5000/api/community/posts/${postId}/vote`,
-        {
-          type,
-        }
-      );
+  // Handle sending messages
+  const handleSendMessage = () => {
+    if (!newMessage.trim() || !currentRoom || !user) return;
 
-      if (response.data.success) {
-        setPosts((prev) =>
-          prev.map((post) =>
-            post.id === postId ? { ...post, votes: response.data.votes } : post
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Failed to vote:", error);
-    }
+    const message: ChatMessage = {
+      id: Date.now().toString(),
+      content: newMessage,
+      author: {
+        id: user.id || "current-user",
+        name: user.name || "Current User",
+        avatar: user.avatar,
+        location: user.location?.state,
+        isOnline: true,
+      },
+      timestamp: new Date().toISOString(),
+      type: "text",
+      reactions: {},
+    };
+
+    setMessages((prev) => [...prev, message]);
+    setNewMessage("");
+    scrollToBottom();
   };
 
-  const handleCreatePost = async () => {
-    if (!newPost.title.trim() || !newPost.content.trim()) {
-      return;
+  // Handle typing indicators
+  const handleTyping = () => {
+    if (!isTyping && currentRoom && user) {
+      setIsTyping(true);
     }
 
-    try {
-      const response = await axios.post(
-        "http://localhost:5000/api/community/posts",
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+    }, 1000);
+  };
+
+  // Handle room switching
+  const handleRoomChange = (room: ChatRoom) => {
+    setCurrentRoom(room);
+
+    // Mock different messages for different rooms
+    if (room.id === "cassava") {
+      setMessages([
         {
-          ...newPost,
-          tags: newPost.tags
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter((tag) => tag),
+          id: "c1",
+          content:
+            "Welcome to the Cassava Farmers chat! 🍠 Share your tips and experiences here.",
+          author: { id: "system", name: "System", location: "Nigeria" },
+          timestamp: new Date(Date.now() - 7200000).toISOString(),
+          type: "system",
+          reactions: {},
         },
         {
-          headers: {
-            "user-id": "current-user-id", // Replace with actual user ID
-          },
-        }
-      );
-
-      if (response.data.success) {
-        setPosts((prev) => [response.data.post, ...prev]);
-        setNewPost({
-          title: "",
-          content: "",
-          category: "",
-          cropType: "",
-          tags: "",
-          location: "",
-          language: "en",
-        });
-        setNewPostOpen(false);
-
-        // Show success message
-        if (response.data.post.aiModeration?.status === "flagged") {
-          alert(
-            "Post submitted for review. It will be published after moderation."
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Failed to create post:", error);
-    }
-  };
-
-  const handleAddReply = async () => {
-    if (!selectedPost || !newReply.trim()) {
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        `http://localhost:5000/api/community/posts/${selectedPost.id}/reply`,
+          id: "c2",
+          content:
+            "Just harvested my cassava crop. The yield was amazing this season!",
+          author: { id: "1", name: "Adamu Ibrahim", location: "Kano" },
+          timestamp: new Date(Date.now() - 5400000).toISOString(),
+          type: "text",
+          reactions: {},
+          metadata: { cropType: "cassava" },
+        },
+      ]);
+    } else if (room.id === "market") {
+      setMessages([
         {
-          content: newReply,
-          language: selectedLanguage,
+          id: "m1",
+          content:
+            "Current cassava prices in Lagos: ₦180/kg. Up from last week!",
+          author: { id: "2", name: "Ngozi Okafor", location: "Lagos" },
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          type: "text",
+          reactions: {},
         },
         {
-          headers: {
-            "user-id": "current-user-id", // Replace with actual user ID
-          },
-        }
-      );
-
-      if (response.data.success) {
-        setSelectedPost((prev) =>
-          prev
-            ? {
-                ...prev,
-                replies: [...prev.replies, response.data.reply],
-              }
-            : null
-        );
-        setNewReply("");
-      }
-    } catch (error) {
-      console.error("Failed to add reply:", error);
-    }
-  };
-
-  const getAiTagColor = (tag: string) => {
-    switch (tag) {
-      case "verified":
-        return "success";
-      case "helpful":
-        return "info";
-      case "needs_verification":
-        return "warning";
-      default:
-        return "default";
-    }
-  };
-
-  const getAiTagIcon = (tag: string) => {
-    switch (tag) {
-      case "verified":
-        return <Verified fontSize="small" />;
-      case "helpful":
-        return <ThumbUp fontSize="small" />;
-      case "needs_verification":
-        return <Warning fontSize="small" />;
-      default:
-        return <HelpOutline fontSize="small" />;
-    }
-  };
-
-  const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMinutes = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60)
-    );
-
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes}m ago`;
-    } else if (diffInMinutes < 1440) {
-      return `${Math.floor(diffInMinutes / 60)}h ago`;
+          id: "m2",
+          content: "Tomato prices are also rising. ₦250/kg in Kano market.",
+          author: { id: "3", name: "Fatima Aliyu", location: "Kano" },
+          timestamp: new Date(Date.now() - 1800000).toISOString(),
+          type: "text",
+          reactions: {},
+        },
+      ]);
     } else {
-      return `${Math.floor(diffInMinutes / 1440)}d ago`;
+      // Default general chat messages
+      setMessages([
+        {
+          id: "g1",
+          content: "Good morning farmers! How is everyone doing today?",
+          author: { id: "1", name: "Adamu Ibrahim", location: "Kano" },
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          type: "text",
+          reactions: {},
+        },
+        {
+          id: "g2",
+          content: "Morning! Just checking the weather forecast for this week.",
+          author: { id: "2", name: "Ngozi Okafor", location: "Enugu" },
+          timestamp: new Date(Date.now() - 1800000).toISOString(),
+          type: "text",
+          reactions: {},
+        },
+      ]);
     }
   };
 
-  return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography
-        variant="h3"
-        component="h1"
-        textAlign="center"
-        gutterBottom
-        fontWeight="bold"
-      >
-        🤝 Nigerian Farmers Community
-      </Typography>
-      <Typography
-        variant="h6"
-        textAlign="center"
-        color="textSecondary"
-        sx={{ mb: 4 }}
-      >
-        Connect with fellow Nigerian farmers, share knowledge, and grow together
-        🇳🇬
-      </Typography>
+  // Handle file attachment
+  const handleFileAttach = () => {
+    fileInputRef.current?.click();
+  };
 
-      {/* Language Selector */}
-      <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-        <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>Language / Harshe / Asụsụ / Ede</InputLabel>
-          <Select
-            value={selectedLanguage}
-            onChange={(e) => setSelectedLanguage(e.target.value)}
-            startAdornment={<Translate sx={{ mr: 1 }} />}
-          >
-            {languages.map((lang) => (
-              <MenuItem key={lang.code} value={lang.code}>
-                {lang.flag} {lang.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
+  // Handle image selection
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      // TODO: Implement image upload
+    }
+  };
 
-      {/* Navigation Tabs */}
-      <Paper sx={{ mb: 4 }}>
-        <Tabs
-          value={tabValue}
-          onChange={(_, newValue) => setTabValue(newValue)}
-          variant="scrollable"
-          scrollButtons="auto"
+  // Handle voice recording
+  const handleVoiceRecord = () => {
+    setIsRecording(!isRecording);
+    // TODO: Implement voice recording
+  };
+
+  // Format time for messages
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  // Get user display name
+  const getUserDisplayName = (userId: string) => {
+    const user = onlineUsers.find((u) => u.id === userId);
+    return user?.name || "Unknown User";
+  };
+
+  const MessageBubble = ({
+    message,
+    isOwnMessage,
+  }: {
+    message: ChatMessage;
+    isOwnMessage: boolean;
+  }) => (
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: isOwnMessage ? "flex-end" : "flex-start",
+        mb: 1,
+        alignItems: "flex-end",
+      }}
+    >
+      {!isOwnMessage && (
+        <Avatar
+          sx={{
+            mr: 1,
+            width: 32,
+            height: 32,
+            bgcolor: message.type === "system" ? "grey.500" : "primary.main",
+          }}
         >
-          <Tab icon={<GroupWork />} label="All Posts" />
-          <Tab icon={<TrendingUp />} label="Trending" />
-          <Tab icon={<Agriculture />} label="My Crops" />
-        </Tabs>
-      </Paper>
+          {message.type === "system"
+            ? "🤖"
+            : message.author.name.charAt(0).toUpperCase()}
+        </Avatar>
+      )}
 
-      {/* Filters and Search */}
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <TextField
-              fullWidth
-              placeholder="Search posts... / Neman rubutu..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
+      <Box sx={{ maxWidth: "70%" }}>
+        {!isOwnMessage && (
+          <Box sx={{ display: "flex", alignItems: "center", mb: 0.5 }}>
+            <Typography variant="caption" color="textSecondary" sx={{ mr: 1 }}>
+              {message.author.name}
+            </Typography>
+            {message.author.location && (
+              <Chip
+                label={message.author.location}
+                size="small"
+                variant="outlined"
+                sx={{ height: 16, fontSize: "0.6rem" }}
+              />
+            )}
+          </Box>
+        )}
+
+        <Paper
+          elevation={1}
+          sx={{
+            p: 1.5,
+            bgcolor:
+              message.type === "system"
+                ? "info.light"
+                : isOwnMessage
+                ? "primary.main"
+                : "grey.100",
+            color:
+              message.type === "system"
+                ? "info.contrastText"
+                : isOwnMessage
+                ? "white"
+                : "text.primary",
+            borderRadius: 2,
+            borderBottomRightRadius: isOwnMessage ? 0 : 2,
+            borderBottomLeftRadius: isOwnMessage ? 2 : 0,
+          }}
+        >
+          <Typography variant="body2">{message.content}</Typography>
+
+          {message.metadata?.cropType && (
+            <Chip
+              label={message.metadata.cropType}
+              size="small"
+              sx={{
+                mt: 0.5,
+                height: 16,
+                fontSize: "0.6rem",
+                bgcolor: isOwnMessage ? "primary.dark" : "primary.light",
+                color: "white",
               }}
             />
-          </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <MenuItem value="">All Categories</MenuItem>
-                {categories.map((cat) => (
-                  <MenuItem key={cat.id} value={cat.id}>
-                    {cat.icon} {cat.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel>State</InputLabel>
-              <Select
-                value={selectedState}
-                onChange={(e) => setSelectedState(e.target.value)}
-              >
-                <MenuItem value="">All States</MenuItem>
-                {states.map((state) => (
-                  <MenuItem key={state.code} value={state.code}>
-                    {state.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel>Crop</InputLabel>
-              <Select
-                value={selectedCrop}
-                onChange={(e) => setSelectedCrop(e.target.value)}
-              >
-                <MenuItem value="">All Crops</MenuItem>
-                {nigerianCrops.map((crop) => (
-                  <MenuItem key={crop} value={crop}>
-                    {crop.charAt(0).toUpperCase() + crop.slice(1)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
-            <Button
-              fullWidth
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => setNewPostOpen(true)}
-              sx={{ height: 56 }}
-            >
-              Ask Question
-            </Button>
-          </Grid>
-        </Grid>
-
-        {/* Sort Options */}
-        <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
-          <Button
-            variant={sortBy === "recent" ? "contained" : "outlined"}
-            size="small"
-            onClick={() => setSortBy("recent")}
-          >
-            Recent
-          </Button>
-          <Button
-            variant={sortBy === "popular" ? "contained" : "outlined"}
-            size="small"
-            onClick={() => setSortBy("popular")}
-          >
-            Popular
-          </Button>
-          <Button
-            variant={sortBy === "votes" ? "contained" : "outlined"}
-            size="small"
-            onClick={() => setSortBy("votes")}
-          >
-            Most Voted
-          </Button>
-        </Box>
-      </Paper>
-
-      {/* Trending Topics Sidebar */}
-      {tabValue === 1 && (
-        <Paper sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            🔥 Trending Topics
-          </Typography>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            {trending.map((item, index) => (
-              <Chip
-                key={index}
-                label={`${item.tag} (${item.count})`}
-                color="primary"
-                variant="outlined"
-                onClick={() => setSearchTerm(item.tag)}
-                sx={{ cursor: "pointer" }}
-              />
-            ))}
-          </Box>
+          )}
         </Paper>
-      )}
 
-      {/* Posts List */}
-      <Box sx={{ mb: 4 }}>
-        {loading ? (
-          <Typography textAlign="center">Loading posts...</Typography>
-        ) : posts.length === 0 ? (
-          <Paper sx={{ p: 4, textAlign: "center" }}>
-            <Typography variant="h6" gutterBottom>
-              No posts found
-            </Typography>
-            <Typography color="textSecondary">
-              Be the first to start a discussion!
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => setNewPostOpen(true)}
-              sx={{ mt: 2 }}
-            >
-              Create First Post
-            </Button>
-          </Paper>
-        ) : (
-          posts.map((post) => (
-            <Card
-              key={post.id}
-              sx={{ mb: 3, cursor: "pointer" }}
-              onClick={() => setSelectedPost(post)}
-            >
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
-                  <Avatar sx={{ mr: 2, bgcolor: "primary.main" }}>
-                    {post.author.charAt(0).toUpperCase()}
-                  </Avatar>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
-                      {post.title}
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                        mb: 1,
-                      }}
-                    >
-                      <Typography variant="body2" color="textSecondary">
-                        by {post.author}
-                      </Typography>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <LocationOn fontSize="small" sx={{ mr: 0.5 }} />
-                        <Typography variant="body2" color="textSecondary">
-                          {post.location}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <AccessTime fontSize="small" sx={{ mr: 0.5 }} />
-                        <Typography variant="body2" color="textSecondary">
-                          {formatTimeAgo(post.createdAt)}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Typography variant="body1" sx={{ mb: 2 }}>
-                      {post.content.length > 150
-                        ? `${post.content.substring(0, 150)}...`
-                        : post.content}
-                    </Typography>
-                    <Box
-                      sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}
-                    >
-                      {post.tags.map((tag) => (
-                        <Chip
-                          key={tag}
-                          label={tag}
-                          size="small"
-                          variant="outlined"
-                        />
-                      ))}
-                    </Box>
-                  </Box>
-                </Box>
+        <Typography
+          variant="caption"
+          color="textSecondary"
+          sx={{
+            display: "block",
+            textAlign: isOwnMessage ? "right" : "left",
+            mt: 0.5,
+          }}
+        >
+          {formatTime(message.timestamp)}
+        </Typography>
+      </Box>
+    </Box>
+  );
 
+  if (!user) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4, textAlign: "center" }}>
+        <Typography variant="h6">
+          Please log in to join the farmers' community chat
+        </Typography>
+      </Container>
+    );
+  }
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 2, height: "calc(100vh - 100px)" }}>
+      <Grid container spacing={2} sx={{ height: "100%" }}>
+        {/* Sidebar with rooms and online users */}
+        <Grid item xs={12} md={3}>
+          <Paper
+            sx={{ height: "100%", display: "flex", flexDirection: "column" }}
+          >
+            {/* Header */}
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  mb: 1,
+                }}
+              >
+                <Typography variant="h6" fontWeight="bold">
+                  🇳🇬 Farmers Chat
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={(e) => setMenuAnchorEl(e.currentTarget)}
+                >
+                  <MoreVert />
+                </IconButton>
+              </Box>
+
+              <FormControl fullWidth size="small">
+                <InputLabel>Language</InputLabel>
+                <Select
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value)}
+                >
+                  {languages.map((lang) => (
+                    <MenuItem key={lang.code} value={lang.code}>
+                      {lang.flag} {lang.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* Chat Rooms */}
+            <Box sx={{ flex: 1, overflow: "auto" }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ p: 2, pb: 1, fontWeight: "bold" }}
+              >
+                Chat Rooms
+              </Typography>
+
+              {rooms.map((room) => (
                 <Box
+                  key={room.id}
+                  onClick={() => handleRoomChange(room)}
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    p: 2,
+                    cursor: "pointer",
+                    bgcolor:
+                      currentRoom?.id === room.id
+                        ? "primary.light"
+                        : "transparent",
+                    color:
+                      currentRoom?.id === room.id
+                        ? "primary.contrastText"
+                        : "text.primary",
+                    "&:hover": { bgcolor: "action.hover" },
+                    borderLeft: currentRoom?.id === room.id ? 3 : 0,
+                    borderColor: "primary.main",
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleVote(post.id, "up");
-                        }}
-                      >
-                        <ThumbUp fontSize="small" />
-                      </IconButton>
-                      <Typography variant="body2" sx={{ mx: 1 }}>
-                        {post.votes}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="body2" fontWeight="bold">
+                        {room.icon} {room.name}
                       </Typography>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleVote(post.id, "down");
-                        }}
-                      >
-                        <ThumbDown fontSize="small" />
-                      </IconButton>
-                    </Box>
-
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Comment fontSize="small" sx={{ mr: 0.5 }} />
-                      <Typography variant="body2">
-                        {post.replies.length} replies
+                      <Typography variant="caption" color="textSecondary">
+                        {room.memberCount} members
                       </Typography>
                     </Box>
-                  </Box>
-
-                  {post.aiModeration.status === "approved" && (
-                    <Chip
-                      icon={<Verified />}
-                      label="AI Verified"
-                      size="small"
-                      color="success"
-                      variant="outlined"
-                    />
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </Box>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
-          <Pagination
-            count={totalPages}
-            page={currentPage}
-            onChange={(_, page) => setCurrentPage(page)}
-            color="primary"
-          />
-        </Box>
-      )}
-
-      {/* Floating Action Button */}
-      <Fab
-        color="primary"
-        aria-label="add"
-        sx={{ position: "fixed", bottom: 16, right: 16 }}
-        onClick={() => setNewPostOpen(true)}
-      >
-        <Add />
-      </Fab>
-
-      {/* Post Detail Dialog */}
-      <Dialog
-        open={!!selectedPost}
-        onClose={() => setSelectedPost(null)}
-        maxWidth="md"
-        fullWidth
-      >
-        {selectedPost && (
-          <>
-            <DialogTitle>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <Avatar sx={{ mr: 2, bgcolor: "primary.main" }}>
-                  {selectedPost.author.charAt(0).toUpperCase()}
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight="bold">
-                    {selectedPost.title}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    by {selectedPost.author} • {selectedPost.location} •{" "}
-                    {formatTimeAgo(selectedPost.createdAt)}
-                  </Typography>
-                </Box>
-              </Box>
-            </DialogTitle>
-
-            <DialogContent>
-              <Typography variant="body1" paragraph>
-                {selectedPost.content}
-              </Typography>
-
-              <Box sx={{ mb: 3 }}>
-                {selectedPost.tags.map((tag) => (
-                  <Chip
-                    key={tag}
-                    label={tag}
-                    size="small"
-                    sx={{ mr: 1, mb: 1 }}
-                  />
-                ))}
-              </Box>
-
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                Replies ({selectedPost.replies.length})
-              </Typography>
-
-              {selectedPost.replies.map((reply) => (
-                <Card key={reply.id} sx={{ mb: 2, bgcolor: "grey.50" }}>
-                  <CardContent>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        mb: 1,
-                      }}
-                    >
-                      <Typography variant="subtitle2" fontWeight="bold">
-                        {reply.author}
-                      </Typography>
+                    {room.isActive && (
                       <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <Typography variant="caption" color="textSecondary">
-                          {formatTimeAgo(reply.createdAt)}
-                        </Typography>
-                        <Chip
-                          icon={getAiTagIcon(reply.aiTag)}
-                          label={reply.aiTag.replace("_", " ")}
-                          size="small"
-                          color={getAiTagColor(reply.aiTag) as any}
-                          variant="outlined"
-                        />
-                      </Box>
-                    </Box>
-                    <Typography variant="body2">{reply.content}</Typography>
-                  </CardContent>
-                </Card>
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          bgcolor: "success.main",
+                        }}
+                      />
+                    )}
+                  </Box>
+                </Box>
               ))}
 
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                placeholder="Add your reply..."
-                value={newReply}
-                onChange={(e) => setNewReply(e.target.value)}
-                sx={{ mt: 2 }}
-              />
-            </DialogContent>
+              <Divider sx={{ my: 2 }} />
 
-            <DialogActions>
-              <Button onClick={() => setSelectedPost(null)}>Close</Button>
-              <Button
-                variant="contained"
-                onClick={handleAddReply}
-                disabled={!newReply.trim()}
+              {/* Online Users */}
+              <Typography
+                variant="subtitle2"
+                sx={{ p: 2, pb: 1, fontWeight: "bold" }}
               >
-                Add Reply
-              </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
+                Online ({onlineUsers.length})
+              </Typography>
 
-      {/* New Post Dialog */}
+              {onlineUsers.map((user) => (
+                <Box
+                  key={user.id}
+                  sx={{ px: 2, py: 1, display: "flex", alignItems: "center" }}
+                >
+                  <Badge
+                    overlap="circular"
+                    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                    variant="dot"
+                    sx={{
+                      "& .MuiBadge-badge": {
+                        bgcolor: "success.main",
+                        color: "success.main",
+                        "&::after": {
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          borderRadius: "50%",
+                          animation: "ripple 1.2s infinite ease-in-out",
+                          border: "1px solid currentColor",
+                          content: '""',
+                        },
+                      },
+                    }}
+                  >
+                    <Avatar
+                      sx={{ width: 24, height: 24, bgcolor: "secondary.main" }}
+                    >
+                      {user.name.charAt(0).toUpperCase()}
+                    </Avatar>
+                  </Badge>
+                  <Box sx={{ ml: 1 }}>
+                    <Typography variant="caption" sx={{ display: "block" }}>
+                      {user.name}
+                    </Typography>
+                    {user.location && (
+                      <Typography variant="caption" color="textSecondary">
+                        {user.location}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* Main Chat Area */}
+        <Grid item xs={12} md={9}>
+          <Paper
+            sx={{ height: "100%", display: "flex", flexDirection: "column" }}
+          >
+            {/* Chat Header */}
+            <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Box>
+                  <Typography variant="h6" fontWeight="bold">
+                    {currentRoom?.icon} {currentRoom?.name}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    {currentRoom?.description} • {currentRoom?.memberCount}{" "}
+                    members
+                  </Typography>
+                </Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Tooltip title="Voice Chat">
+                    <IconButton size="small">
+                      <Mic />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Settings">
+                    <IconButton
+                      size="small"
+                      onClick={() => setSettingsOpen(true)}
+                    >
+                      <Settings />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Messages Area */}
+            <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
+              {messages.length === 0 ? (
+                <Box sx={{ textAlign: "center", py: 4 }}>
+                  <Typography variant="h6" color="textSecondary" gutterBottom>
+                    Welcome to {currentRoom?.name}! 👋
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Start a conversation with fellow farmers
+                  </Typography>
+                </Box>
+              ) : (
+                messages.map((message) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    isOwnMessage={message.author.id === user.id}
+                  />
+                ))
+              )}
+
+              {/* Typing indicators */}
+              {typingUsers.length > 0 && (
+                <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
+                  <Typography variant="caption" color="textSecondary">
+                    {typingUsers.map(getUserDisplayName).join(", ")}{" "}
+                    {typingUsers.length === 1 ? "is" : "are"} typing...
+                  </Typography>
+                </Box>
+              )}
+
+              <div ref={messagesEndRef} />
+            </Box>
+
+            {/* Message Input */}
+            <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <TextField
+                  fullWidth
+                  placeholder="Type your message..."
+                  value={newMessage}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    handleTyping();
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  variant="outlined"
+                  size="small"
+                  multiline
+                  maxRows={4}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 3,
+                    },
+                  }}
+                />
+
+                <Tooltip title="Attach Image">
+                  <IconButton onClick={handleFileAttach} color="primary">
+                    <ImageIcon />
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip
+                  title={
+                    isRecording ? "Stop Recording" : "Record Voice Message"
+                  }
+                >
+                  <IconButton
+                    onClick={handleVoiceRecord}
+                    color={isRecording ? "error" : "primary"}
+                  >
+                    {isRecording ? <MicOff /> : <Mic />}
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title="Send Message">
+                  <IconButton
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim()}
+                    color="primary"
+                    sx={{
+                      bgcolor: "primary.main",
+                      color: "white",
+                      "&:hover": { bgcolor: "primary.dark" },
+                      "&:disabled": { bgcolor: "action.disabled" },
+                    }}
+                  >
+                    <Send />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={handleImageSelect}
+      />
+
+      {/* Menu */}
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={() => setMenuAnchorEl(null)}
+      >
+        <MenuItem onClick={() => setSettingsOpen(true)}>
+          <Settings sx={{ mr: 1 }} />
+          Settings
+        </MenuItem>
+        <MenuItem>
+          <Person sx={{ mr: 1 }} />
+          Profile
+        </MenuItem>
+      </Menu>
+
+      {/* Settings Dialog */}
       <Dialog
-        open={newPostOpen}
-        onClose={() => setNewPostOpen(false)}
-        maxWidth="md"
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Ask the Community a Question</DialogTitle>
+        <DialogTitle>Chat Settings</DialogTitle>
         <DialogContent>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Ask your fellow Nigerian farmers for advice. All posts are moderated
-            by AI to ensure helpful and safe content.
-          </Alert>
+          <Typography variant="body2" color="textSecondary" paragraph>
+            Customize your chat experience
+          </Typography>
 
-          <TextField
-            fullWidth
-            label="Question Title"
-            value={newPost.title}
-            onChange={(e) =>
-              setNewPost((prev) => ({ ...prev, title: e.target.value }))
-            }
-            margin="normal"
-            placeholder="e.g., Best cassava varieties for Lagos State?"
-          />
-
-          <TextField
-            fullWidth
-            label="Detailed Question"
-            multiline
-            rows={4}
-            value={newPost.content}
-            onChange={(e) =>
-              setNewPost((prev) => ({ ...prev, content: e.target.value }))
-            }
-            margin="normal"
-            placeholder="Describe your farming challenge or question in detail..."
-          />
-
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={newPost.category}
-                  onChange={(e) =>
-                    setNewPost((prev) => ({
-                      ...prev,
-                      category: e.target.value,
-                    }))
-                  }
-                >
-                  {categories.map((cat) => (
-                    <MenuItem key={cat.id} value={cat.id}>
-                      {cat.icon} {cat.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>Crop Type (if applicable)</InputLabel>
-                <Select
-                  value={newPost.cropType}
-                  onChange={(e) =>
-                    setNewPost((prev) => ({
-                      ...prev,
-                      cropType: e.target.value,
-                    }))
-                  }
-                >
-                  <MenuItem value="">Not crop-specific</MenuItem>
-                  {nigerianCrops.map((crop) => (
-                    <MenuItem key={crop} value={crop}>
-                      {crop.charAt(0).toUpperCase() + crop.slice(1)}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-
-          <TextField
-            fullWidth
-            label="Your Location (State, LGA)"
-            value={newPost.location}
-            onChange={(e) =>
-              setNewPost((prev) => ({ ...prev, location: e.target.value }))
-            }
-            margin="normal"
-            placeholder="e.g., Lagos, Ikorodu"
-          />
-
-          <TextField
-            fullWidth
-            label="Tags (comma separated)"
-            value={newPost.tags}
-            onChange={(e) =>
-              setNewPost((prev) => ({ ...prev, tags: e.target.value }))
-            }
-            margin="normal"
-            placeholder="e.g., cassava, disease, organic farming"
-          />
-
-          <FormControl fullWidth sx={{ mt: 2 }}>
+          <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>Language</InputLabel>
             <Select
-              value={newPost.language}
-              onChange={(e) =>
-                setNewPost((prev) => ({ ...prev, language: e.target.value }))
-              }
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value)}
             >
               {languages.map((lang) => (
                 <MenuItem key={lang.code} value={lang.code}>
@@ -922,16 +816,13 @@ const Community: React.FC = () => {
               ))}
             </Select>
           </FormControl>
+
+          <Typography variant="body2" color="textSecondary">
+            More settings coming soon...
+          </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setNewPostOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleCreatePost}
-            disabled={!newPost.title.trim() || !newPost.content.trim()}
-          >
-            Post Question
-          </Button>
+          <Button onClick={() => setSettingsOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Container>

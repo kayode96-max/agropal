@@ -30,7 +30,7 @@ import {
   CalendarToday,
   Warning,
 } from "@mui/icons-material";
-import axios from "axios";
+import { weatherAPI } from "../utils/api";
 
 interface WeatherData {
   location: {
@@ -133,127 +133,28 @@ const Weather: React.FC = () => {
     setError("");
 
     try {
-      const response = await axios.get(`/api/weather/current`, {
-        params: {
-          state: selectedState,
-          lga: selectedLGA || undefined,
-        },
-      });
+      // Use the location in the URL path as expected by the backend
+      const location = selectedLGA
+        ? `${selectedState}/${selectedLGA}`
+        : selectedState;
+      console.log(
+        "Calling weatherAPI.getCurrentWeather with location:",
+        location
+      );
+      const response = await weatherAPI.getCurrentWeather(location);
+      console.log("Weather API response:", response.data);
 
       setWeatherData(response.data.data);
     } catch (err: any) {
       console.error("Weather fetch error:", err);
+      console.error("Error details:", {
+        message: err.message,
+        status: err.response?.status,
+        url: err.config?.url,
+        data: err.response?.data,
+      });
       setError(err.response?.data?.message || "Failed to fetch weather data");
-
-      // Fallback to mock data for development
-      const mockData: WeatherData = {
-        location: {
-          state: selectedState,
-          lga: selectedLGA || "Metropolitan",
-          coordinates: { latitude: 6.5244, longitude: 3.3792 },
-        },
-        current: {
-          temperature: 28,
-          condition: "Partly Cloudy",
-          humidity: 75,
-          windSpeed: 8,
-          pressure: 1012,
-          visibility: 10,
-          uvIndex: 7,
-        },
-        forecast: [
-          {
-            date: "2025-07-06",
-            high: 30,
-            low: 22,
-            condition: "Sunny",
-            precipitation: 5,
-            humidity: 70,
-            windSpeed: 10,
-          },
-          {
-            date: "2025-07-07",
-            high: 29,
-            low: 23,
-            condition: "Thunderstorms",
-            precipitation: 80,
-            humidity: 85,
-            windSpeed: 15,
-          },
-          {
-            date: "2025-07-08",
-            high: 31,
-            low: 24,
-            condition: "Sunny",
-            precipitation: 0,
-            humidity: 65,
-            windSpeed: 12,
-          },
-          {
-            date: "2025-07-09",
-            high: 29,
-            low: 23,
-            condition: "Partly Cloudy",
-            precipitation: 20,
-            humidity: 75,
-            windSpeed: 8,
-          },
-          {
-            date: "2025-07-10",
-            high: 28,
-            low: 22,
-            condition: "Rainy",
-            precipitation: 90,
-            humidity: 85,
-            windSpeed: 18,
-          },
-        ],
-        agricultural: {
-          soilMoisture: "Adequate",
-          plantingConditions: "Good for root crops",
-          pestRisk: "Moderate",
-          irrigation: "Minimal needed",
-          recommendations: [
-            "Good time for planting cassava and yam",
-            "Monitor for fungal diseases due to humidity",
-            "Consider pest control measures",
-            "Harvest early maturing vegetables before heavy rains",
-          ],
-        },
-        farmingCalendar: {
-          currentSeason: "Wet Season",
-          upcomingActivities: [
-            {
-              activity: "Plant Maize",
-              timeframe: "Next 2 weeks",
-              priority: "High",
-            },
-            {
-              activity: "Weed Control",
-              timeframe: "This week",
-              priority: "Medium",
-            },
-            {
-              activity: "Harvest Tomatoes",
-              timeframe: "Next week",
-              priority: "High",
-            },
-          ],
-        },
-        alerts: [
-          {
-            type: "Weather",
-            message: "Heavy rainfall expected in the next 48 hours",
-            severity: "warning",
-          },
-          {
-            type: "Agricultural",
-            message: "High humidity may increase fungal disease risk",
-            severity: "info",
-          },
-        ],
-      };
-      setWeatherData(mockData);
+      // No fallback - show the actual error
     } finally {
       setLoading(false);
     }
@@ -318,7 +219,7 @@ const Weather: React.FC = () => {
           📍 Select Your Location
         </Typography>
         <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid xs={12} md={4}>
             <FormControl fullWidth>
               <InputLabel>State</InputLabel>
               <Select
@@ -334,7 +235,7 @@ const Weather: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid xs={12} md={4}>
             <TextField
               fullWidth
               label="Local Government Area (Optional)"
@@ -343,7 +244,7 @@ const Weather: React.FC = () => {
               placeholder="e.g., Ikeja, Surulere"
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid xs={12} md={4}>
             <Button
               fullWidth
               variant="contained"
@@ -396,29 +297,29 @@ const Weather: React.FC = () => {
             <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
               <LocationOn sx={{ mr: 1, color: "primary.main" }} />
               <Typography variant="h6">
-                {weatherData.location.state}
-                {weatherData.location.lga && `, ${weatherData.location.lga}`}
+                {weatherData.location?.state || "Unknown Location"}
+                {weatherData.location?.lga && `, ${weatherData.location.lga}`}
               </Typography>
             </Box>
 
             <Grid container spacing={3}>
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid xs={12} md={6}>
                 <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  {getWeatherIcon(weatherData.current.condition)}
+                  {getWeatherIcon(weatherData.current?.condition || "Unknown")}
                   <Box sx={{ ml: 2 }}>
                     <Typography variant="h3" component="div" fontWeight="bold">
-                      {weatherData.current.temperature}°C
+                      {weatherData.current?.temperature || 0}°C
                     </Typography>
                     <Typography variant="h6" color="textSecondary">
-                      {weatherData.current.condition}
+                      {weatherData.current?.condition || "Unknown"}
                     </Typography>
                   </Box>
                 </Box>
               </Grid>
 
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid xs={12} md={6}>
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 6 }}>
+                  <Grid xs={6}>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Water sx={{ mr: 1, color: "#2196F3" }} />
                       <Box>
@@ -426,12 +327,12 @@ const Weather: React.FC = () => {
                           Humidity
                         </Typography>
                         <Typography variant="h6">
-                          {weatherData.current.humidity}%
+                          {weatherData.current?.humidity || 0}%
                         </Typography>
                       </Box>
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 6 }}>
+                  <Grid xs={6}>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Air sx={{ mr: 1, color: "#607D8B" }} />
                       <Box>
@@ -439,12 +340,12 @@ const Weather: React.FC = () => {
                           Wind Speed
                         </Typography>
                         <Typography variant="h6">
-                          {weatherData.current.windSpeed} km/h
+                          {weatherData.current?.windSpeed || 0} km/h
                         </Typography>
                       </Box>
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 6 }}>
+                  <Grid xs={6}>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Thermostat sx={{ mr: 1, color: "#FF5722" }} />
                       <Box>
@@ -452,12 +353,12 @@ const Weather: React.FC = () => {
                           Pressure
                         </Typography>
                         <Typography variant="h6">
-                          {weatherData.current.pressure} hPa
+                          {weatherData.current?.pressure || 0} hPa
                         </Typography>
                       </Box>
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 6 }}>
+                  <Grid xs={6}>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Visibility sx={{ mr: 1, color: "#9C27B0" }} />
                       <Box>
@@ -465,7 +366,7 @@ const Weather: React.FC = () => {
                           UV Index
                         </Typography>
                         <Typography variant="h6">
-                          {weatherData.current.uvIndex}/10
+                          {weatherData.current?.uvIndex || 0}/10
                         </Typography>
                       </Box>
                     </Box>
@@ -481,8 +382,8 @@ const Weather: React.FC = () => {
               📅 5-Day Forecast
             </Typography>
             <Grid container spacing={2}>
-              {weatherData.forecast.map((day, index) => (
-                <Grid size={{ xs: 12, sm: 6, md: 2.4 }} key={index}>
+              {(weatherData.forecast || []).map((day, index) => (
+                <Grid xs={12} sm={6} md={2.4} key={index}>
                   <Card
                     sx={{
                       p: 2,
@@ -521,7 +422,7 @@ const Weather: React.FC = () => {
               🌾 Agricultural Insights
             </Typography>
             <Grid container spacing={3}>
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid xs={12} md={6}>
                 <Box sx={{ mb: 3 }}>
                   <Typography
                     variant="subtitle1"
@@ -534,34 +435,41 @@ const Weather: React.FC = () => {
                     sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}
                   >
                     <Chip
-                      label={`Soil: ${weatherData.agricultural.soilMoisture}`}
+                      label={`Soil: ${
+                        weatherData.agricultural?.soilMoisture || "N/A"
+                      }`}
                       color="primary"
                       variant="outlined"
                     />
                     <Chip
-                      label={`Pest Risk: ${weatherData.agricultural.pestRisk}`}
+                      label={`Pest Risk: ${
+                        weatherData.agricultural?.pestRisk || "N/A"
+                      }`}
                       color="warning"
                       variant="outlined"
                     />
                     <Chip
-                      label={`Irrigation: ${weatherData.agricultural.irrigation}`}
+                      label={`Irrigation: ${
+                        weatherData.agricultural?.irrigation || "N/A"
+                      }`}
                       color="info"
                       variant="outlined"
                     />
                   </Box>
                   <Typography variant="body2" color="textSecondary">
                     <strong>Planting Conditions:</strong>{" "}
-                    {weatherData.agricultural.plantingConditions}
+                    {weatherData.agricultural?.plantingConditions ||
+                      "Information not available"}
                   </Typography>
                 </Box>
               </Grid>
 
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid xs={12} md={6}>
                 <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                   💡 Recommendations
                 </Typography>
                 <Box>
-                  {weatherData.agricultural.recommendations.map(
+                  {(weatherData.agricultural?.recommendations || []).map(
                     (rec, index) => (
                       <Typography
                         key={index}
@@ -603,7 +511,7 @@ const Weather: React.FC = () => {
               <Grid container spacing={2}>
                 {weatherData.farmingCalendar.upcomingActivities.map(
                   (activity, index) => (
-                    <Grid size={{ xs: 12, md: 4 }} key={index}>
+                    <Grid xs={12} md={4} key={index}>
                       <Card sx={{ p: 2, height: "100%" }}>
                         <Box
                           sx={{ display: "flex", alignItems: "center", mb: 1 }}

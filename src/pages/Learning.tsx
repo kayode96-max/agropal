@@ -123,7 +123,7 @@ const Learning: React.FC = () => {
   useEffect(() => {
     fetchModules();
     fetchProgress();
-  }, [selectedCategory, selectedLanguage]);
+  }, [selectedCategory, selectedLanguage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchModules = async () => {
     try {
@@ -389,7 +389,7 @@ const Learning: React.FC = () => {
           📚 Filter Courses
         </Typography>
         <Grid container spacing={2}>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid xs={12} md={6}>
             <FormControl fullWidth>
               <InputLabel>Category</InputLabel>
               <Select
@@ -405,7 +405,7 @@ const Learning: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid xs={12} md={6}>
             <FormControl fullWidth>
               <InputLabel>Language</InputLabel>
               <Select
@@ -447,7 +447,7 @@ const Learning: React.FC = () => {
           const isCompleted = moduleProgress?.completed || false;
 
           return (
-            <Grid size={{ xs: 12, md: 6, lg: 4 }} key={module._id}>
+            <Grid xs={12} md={6} lg={4} key={module._id}>
               <Card
                 sx={{
                   height: "100%",

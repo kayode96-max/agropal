@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+  process.env.REACT_APP_API_URL || "http://localhost:5001/api";
 
 // Create axios instance
 const api = axios.create({
@@ -45,13 +45,15 @@ export const authAPI = {
 };
 
 export const weatherAPI = {
-  getCurrentWeather: (location?: string) =>
-    api.get(`/weather/current${location ? `?location=${location}` : ""}`),
-  getForecast: (location?: string) =>
-    api.get(`/weather/forecast${location ? `?location=${location}` : ""}`),
+  getCurrentWeather: (location: string = "Lagos") =>
+    api.get(`/weather/current/${location}`),
+  getForecast: (location: string = "Lagos") =>
+    api.get(`/weather/forecast/${location}`),
   getZones: () => api.get("/weather/zones"),
-  getAlerts: () => api.get("/weather/alerts"),
-  getFarmingCalendar: () => api.get("/weather/farming-calendar"),
+  getAlerts: (location: string = "Lagos") =>
+    api.get(`/weather/alerts/${location}`),
+  getFarmingCalendar: (location: string = "Lagos") =>
+    api.get(`/weather/farming-calendar/${location}`),
 };
 
 export const cropsAPI = {
