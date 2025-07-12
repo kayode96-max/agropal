@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend API Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Frontend API Test</h1>
+    <div id="result"></div>
+    <script>
+        // Create axios instance exactly like the frontend
+        const API_BASE_URL = "http://localhost:5001/api";
+        const api = axios.create({
+            baseURL: API_BASE_URL,
+            timeout: 10000,
+        });
+
+        // Add token if available
+        const token = localStorage.getItem("authToken");
+        if (token) {
+            api.defaults.headers.Authorization = `Bearer ${token}`;
+        }
+
+        async function testAPI() {
+            try {
+                console.log('Testing weather API with same config as frontend...');
+                
+                // Test 1: Direct axios call
+                console.log('Test 1: Direct axios call');
+                const response1 = await axios.get('http://localhost:5001/api/weather/current/Lagos');
+                console.log('Direct axios success:', response1.data);
+                
+                // Test 2: Using configured api instance
+                console.log('Test 2: Using configured api instance');
+                const response2 = await api.get('/weather/current/Lagos');
+                console.log('Configured api success:', response2.data);
+                
+                document.getElementById('result').innerHTML = `
+                    <h2>✅ Both tests successful!</h2>
+                    <h3>Direct axios:</h3>
+                    <pre>${JSON.stringify(response1.data, null, 2)}</pre>
+                    <h3>Configured api:</h3>
+                    <pre>${JSON.stringify(response2.data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('API test failed:', error);
+                document.getElementById('result').innerHTML = `
+                    <h2>❌ API Test Failed</h2>
+                    <p>Error: ${error.message}</p>
+                    <p>Status: ${error.response?.status}</p>
+                    <p>Response: ${error.response?.data?.message || 'No error message'}</p>
+                    <h3>Stack trace:</h3>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+
+        // Test immediately
+        testAPI();
+    </script>
+</body>
+</html>

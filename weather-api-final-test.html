@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather API Final Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Weather API Final Test</h1>
+    <div id="results"></div>
+    <script>
+        // Set axios default base URL
+        axios.defaults.baseURL = 'http://localhost:5001/api';
+        
+        async function runTests() {
+            const results = document.getElementById('results');
+            
+            // Test 1: Current weather for Lagos
+            try {
+                console.log('Testing current weather for Lagos...');
+                const response = await axios.get('/weather/current/Lagos');
+                const data = response.data;
+                
+                // Check if all required fields exist
+                const checks = [
+                    { field: 'data.location.state', value: data.data?.location?.state, expected: 'Lagos' },
+                    { field: 'data.current.temperature', value: data.data?.current?.temperature, expected: 'number' },
+                    { field: 'data.current.condition', value: data.data?.current?.condition, expected: 'string' },
+                    { field: 'data.agricultural.soilMoisture', value: data.data?.agricultural?.soilMoisture, expected: 'string' },
+                    { field: 'data.agricultural.recommendations', value: data.data?.agricultural?.recommendations, expected: 'array' },
+                    { field: 'data.forecast', value: data.data?.forecast, expected: 'array' },
+                ];
+                
+                const forecastChecks = data.data?.forecast?.length > 0 ? [
+                    { field: 'forecast[0].high', value: data.data.forecast[0].high, expected: 'number' },
+                    { field: 'forecast[0].low', value: data.data.forecast[0].low, expected: 'number' },
+                    { field: 'forecast[0].precipitation', value: data.data.forecast[0].precipitation, expected: 'number' },
+                    { field: 'forecast[0].date', value: data.data.forecast[0].date, expected: 'string' },
+                ] : [];
+                
+                const allChecks = [...checks, ...forecastChecks];
+                const passed = allChecks.every(check => {
+                    if (check.expected === 'number') return typeof check.value === 'number';
+                    if (check.expected === 'string') return typeof check.value === 'string';
+                    if (check.expected === 'array') return Array.isArray(check.value);
+                    return check.value === check.expected;
+                });
+                
+                if (passed) {
+                    results.innerHTML += `<div class="result success">✅ Current Weather API Test PASSED</div>`;
+                } else {
+                    results.innerHTML += `<div class="result error">❌ Current Weather API Test FAILED - Structure validation failed</div>`;
+                    console.log('Failed checks:', allChecks.filter(check => {
+                        if (check.expected === 'number') return typeof check.value !== 'number';
+                        if (check.expected === 'string') return typeof check.value !== 'string';
+                        if (check.expected === 'array') return !Array.isArray(check.value);
+                        return check.value !== check.expected;
+                    }));
+                }
+                
+                results.innerHTML += `<div class="result">
+                    <h3>Sample Response:</h3>
+                    <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                </div>`;
+                
+            } catch (error) {
+                console.error('Weather API test failed:', error);
+                results.innerHTML += `<div class="result error">❌ Current Weather API Test FAILED - ${error.message}</div>`;
+            }
+            
+            // Test 2: Try different states
+            const states = ['Kano', 'Abuja', 'Rivers'];
+            for (const state of states) {
+                try {
+                    const response = await axios.get(`/weather/current/${state}`);
+                    results.innerHTML += `<div class="result success">✅ ${state} weather API working</div>`;
+                } catch (error) {
+                    results.innerHTML += `<div class="result error">❌ ${state} weather API failed - ${error.message}</div>`;
+                }
+            }
+        }
+
+        // Run tests when page loads
+        runTests();
+    </script>
+</body>
+</html>

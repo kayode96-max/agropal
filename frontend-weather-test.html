@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Weather API Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Frontend Weather API Test</h1>
+    <button onclick="testWeatherAPI()">Test Weather API</button>
+    <div id="result"></div>
+    <script>
+        // Configure axios exactly like the frontend
+        const api = axios.create({
+            baseURL: 'http://localhost:5001/api'
+        });
+
+        const weatherAPI = {
+            getCurrentWeather: (location = "Lagos") =>
+                api.get(`/weather/current/${location}`),
+        };
+
+        async function testWeatherAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                console.log('Calling weatherAPI.getCurrentWeather("Lagos")...');
+                const response = await weatherAPI.getCurrentWeather("Lagos");
+                console.log('Response:', response.data);
+                
+                resultDiv.innerHTML = `
+                    <h2>✅ Success!</h2>
+                    <p><strong>Temperature:</strong> ${response.data.data.current.temperature}°C</p>
+                    <p><strong>Condition:</strong> ${response.data.data.current.condition}</p>
+                    <p><strong>Description:</strong> ${response.data.data.current.description}</p>
+                    <p><strong>Humidity:</strong> ${response.data.data.current.humidity}%</p>
+                    <p><strong>Agricultural Soil:</strong> ${response.data.data.agricultural.soilMoisture}</p>
+                    <pre>${JSON.stringify(response.data.data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `
+                    <h2>❌ Error</h2>
+                    <p><strong>Message:</strong> ${error.message}</p>
+                    <p><strong>Status:</strong> ${error.response?.status}</p>
+                    <p><strong>URL:</strong> ${error.config?.url}</p>
+                    <pre>${JSON.stringify(error.response?.data || error, null, 2)}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

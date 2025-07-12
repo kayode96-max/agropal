@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Port 5001 API Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>Port 5001 API Test</h1>
+    <button onclick="runAllTests()">Run All Tests</button>
+    <div id="results"></div>
+
+    <script>
+        async function testAPI(name, url, method = 'GET', data = null) {
+            try {
+                const response = await axios({ method, url, data });
+                return { name, status: 'success', message: `${method} ${url} - Status: ${response.status}` };
+            } catch (error) {
+                return { name, status: 'error', message: `${method} ${url} - Error: ${error.message}` };
+            }
+        }
+
+        async function runAllTests() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="info">Running tests...</div>';
+
+            const tests = [
+                ['Weather API', 'http://localhost:5001/api/weather/current/Lagos'],
+                ['Crops Diseases', 'http://localhost:5001/api/crops/diseases'],
+                ['Auth Check', 'http://localhost:5001/api/auth/me'],
+                ['Community Categories', 'http://localhost:5001/api/community/categories'],
+                ['Community States', 'http://localhost:5001/api/community/states'],
+                ['Community Posts', 'http://localhost:5001/api/community/posts'],
+                ['Health Check', 'http://localhost:5001/health'],
+            ];
+
+            let results = [];
+            for (const [name, url] of tests) {
+                const result = await testAPI(name, url);
+                results.push(result);
+            }
+
+            // Display results
+            resultsDiv.innerHTML = '';
+            for (const result of results) {
+                const div = document.createElement('div');
+                div.className = `test-result ${result.status}`;
+                div.innerHTML = `<strong>${result.name}</strong>: ${result.message}`;
+                resultsDiv.appendChild(div);
+            }
+
+            // Summary
+            const successCount = results.filter(r => r.status === 'success').length;
+            const totalCount = results.length;
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = `test-result ${successCount === totalCount ? 'success' : 'info'}`;
+            summaryDiv.innerHTML = `<strong>Summary:</strong> ${successCount}/${totalCount} tests passed`;
+            resultsDiv.insertBefore(summaryDiv, resultsDiv.firstChild);
+        }
+    </script>
+</body>
+</html>

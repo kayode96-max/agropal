@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather API Test - Frontend</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Weather API Test</h1>
+    <div id="result"></div>
+    <script>
+        // Set axios default base URL to match frontend
+        axios.defaults.baseURL = 'http://localhost:5001/api';
+        
+        async function testWeatherAPI() {
+            try {
+                console.log('Testing weather API...');
+                const response = await axios.get('/weather/current/Lagos');
+                console.log('Weather API response:', response.data);
+                
+                document.getElementById('result').innerHTML = `
+                    <h2>✅ Weather API Test Successful!</h2>
+                    <pre>${JSON.stringify(response.data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('Weather API test failed:', error);
+                document.getElementById('result').innerHTML = `
+                    <h2>❌ Weather API Test Failed</h2>
+                    <p>Error: ${error.message}</p>
+                    <p>Status: ${error.response?.status}</p>
+                    <p>Response: ${error.response?.data?.message || 'No error message'}</p>
+                `;
+            }
+        }
+
+        // Test immediately
+        testWeatherAPI();
+    </script>
+</body>
+</html>

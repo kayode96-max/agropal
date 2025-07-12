@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Agropal Auth Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="email"], input[type="password"] { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+        }
+        button { 
+            background-color: #4CAF50; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        button:hover { background-color: #45a049; }
+        .result { 
+            margin-top: 20px; 
+            padding: 10px; 
+            border-radius: 4px; 
+            white-space: pre-wrap; 
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .test-users { 
+            background-color: #f0f8ff; 
+            padding: 15px; 
+            border-radius: 4px; 
+            margin-bottom: 20px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 Agropal Authentication Test</h1>
+        
+        <div class="test-users">
+            <h3>Test Users (Password: password123)</h3>
+            <ul>
+                <li>Email: adamu.ibrahim@example.com</li>
+                <li>Email: ngozi.okafor@example.com</li>
+                <li>Email: fatima.aliyu@example.com</li>
+            </ul>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" value="adamu.ibrahim@example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" value="password123" required>
+            </div>
+            <button type="submit">Test Login</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                resultDiv.innerHTML = '<div class="result">🔄 Testing login...</div>';
+                
+                const response = await fetch('http://localhost:5001/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        identifier: email,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = '<div class="result success">✅ Login successful!<br><br>' + 
+                                        'Token: ' + data.token.substring(0, 50) + '...<br><br>' +
+                                        'User: ' + JSON.stringify(data.user, null, 2) + '</div>';
+                    
+                    // Test the /me endpoint
+                    const meResponse = await fetch('http://localhost:5001/api/auth/me', {
+                        headers: {
+                            'Authorization': `Bearer ${data.token}`
+                        }
+                    });
+                    
+                    const meData = await meResponse.json();
+                    
+                    if (meResponse.ok) {
+                        resultDiv.innerHTML += '<div class="result success">✅ Auth check successful!<br><br>' + 
+                                             'Profile: ' + JSON.stringify(meData.user, null, 2) + '</div>';
+                    } else {
+                        resultDiv.innerHTML += '<div class="result error">❌ Auth check failed: ' + 
+                                             JSON.stringify(meData, null, 2) + '</div>';
+                    }
+                } else {
+                    resultDiv.innerHTML = '<div class="result error">❌ Login failed: ' + 
+                                        JSON.stringify(data, null, 2) + '</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="result error">❌ Error: ' + error.message + '</div>';
+            }
+        });
+    </script>
+</body>
+</html>

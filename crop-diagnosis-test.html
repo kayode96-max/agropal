@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crop Diagnosis Test</title>
+</head>
+<body>
+    <h1>Crop Diagnosis Test</h1>
+    <form id="uploadForm">
+        <input type="file" id="imageInput" accept="image/*" required>
+        <input type="text" id="cropType" placeholder="Crop Type (e.g., cassava)" required>
+        <input type="text" id="location" placeholder="Location (e.g., Lagos)" required>
+        <input type="text" id="symptoms" placeholder="Symptoms" required>
+        <button type="submit">Diagnose</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const imageFile = document.getElementById('imageInput').files[0];
+            const cropType = document.getElementById('cropType').value;
+            const location = document.getElementById('location').value;
+            const symptoms = document.getElementById('symptoms').value;
+            
+            if (!imageFile) {
+                alert('Please select an image');
+                return;
+            }
+            
+            formData.append('image', imageFile);
+            formData.append('cropType', cropType);
+            formData.append('location', JSON.stringify({ state: location }));
+            formData.append('symptoms', symptoms);
+            formData.append('plantingDate', '2025-01-01');
+            formData.append('growthStage', 'vegetative');
+            formData.append('userId', 'test-user-id');
+            
+            document.getElementById('result').innerHTML = 'Processing...';
+            
+            try {
+                const response = await fetch('http://localhost:5001/api/crops/diagnose', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('result').innerHTML = 
+                        `<h3>Success!</h3><pre>${JSON.stringify(result, null, 2)}</pre>`;
+                } else {
+                    document.getElementById('result').innerHTML = 
+                        `<h3>Error!</h3><pre>${JSON.stringify(result, null, 2)}</pre>`;
+                }
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `<h3>Network Error!</h3><p>${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
