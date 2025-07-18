@@ -135,12 +135,11 @@ const Community: React.FC = () => {
   const [currentRoom, setCurrentRoom] = useState<ChatRoom | null>(null);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [typingUsers] = useState<string[]>([]); // Removed setTypingUsers as it's not used
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -328,8 +327,8 @@ const Community: React.FC = () => {
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedImage(file);
-      // TODO: Implement image upload
+      // TODO: Implement image upload and display
+      console.log('Selected file:', file.name);
     }
   };
 

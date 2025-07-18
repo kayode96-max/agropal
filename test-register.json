@@ -1,0 +1,14 @@
+{
+  "name": "Test User Frontend",
+  "email": "testfrontend@example.com",
+  "password": "password123",
+  "phone": "+2347012345678",
+  "location": {
+    "state": "Lagos",
+    "localGovernment": "Ikeja"
+  },
+  "profile": {
+    "primaryCrops": ["Rice", "Maize"],
+    "preferredLanguage": "en"
+  }
+}

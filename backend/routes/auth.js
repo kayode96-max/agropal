@@ -34,9 +34,11 @@ router.post(
       .isLength({ min: 6 })
       .withMessage("Password must be at least 6 characters"),
     body("location.state").notEmpty().withMessage("State is required"),
+    body("location.localGovernment").optional(),
     body("profile.primaryCrops")
       .isArray({ min: 1 })
       .withMessage("At least one primary crop required"),
+    body("profile.preferredLanguage").optional(),
   ],
   async (req, res) => {
     try {

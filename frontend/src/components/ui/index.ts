@@ -1,0 +1,9 @@
+// UI Components barrel file for easy imports
+export { default as Button } from './Button';
+export { default as PageContainer } from './PageContainer';
+export { default as PageLoader } from './PageLoader';
+export { default as FadeInSection } from './FadeInSection_new';
+export { default as AnimatedBackground } from './AnimatedBackground';
+export { default as BeautifulAlert } from './BeautifulAlert';
+export { default as LoadingOverlay } from './LoadingOverlay';
+export { default as FeatureCard } from './FeatureCard';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Container,
   Typography,
@@ -33,6 +33,17 @@ interface Message {
   language?: string;
 }
 
+// Helper function to get language codes
+const getLanguageCode = (lang: string) => {
+  const langMap: { [key: string]: string } = {
+    en: "en-US",
+    ha: "ha-NG",
+    ig: "ig-NG",
+    yo: "yo-NG",
+  };
+  return langMap[lang] || "en-US";
+};
+
 const VoiceChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isListening, setIsListening] = useState(false);
@@ -51,6 +62,25 @@ const VoiceChat: React.FC = () => {
     { code: "ig", name: "Igbo", flag: "🇳🇬" },
     { code: "yo", name: "Yoruba", flag: "🇳🇬" },
   ];
+
+  const addMessage = useCallback((
+    text: string,
+    sender: "user" | "ai",
+    language?: string
+  ) => {
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      text,
+      sender,
+      timestamp: new Date(),
+      language,
+    };
+    setMessages((prev) => [...prev, newMessage]);
+  }, []);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
     // Check if speech recognition is supported
@@ -80,13 +110,15 @@ const VoiceChat: React.FC = () => {
         setIsListening(false);
       };
     }
+  }, [selectedLanguage]);
 
-    // Add welcome message
+  useEffect(() => {
+    // Add welcome message only once
     addMessage(
       "Welcome to Agropal Voice Assistant! I can help you with farming questions in multiple Nigerian languages. How can I assist you today?",
       "ai"
     );
-  }, []);
+  }, [addMessage]);
 
   useEffect(() => {
     scrollToBottom();
@@ -96,36 +128,7 @@ const VoiceChat: React.FC = () => {
     if (recognitionRef.current) {
       recognitionRef.current.lang = getLanguageCode(selectedLanguage);
     }
-  }, [selectedLanguage]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const getLanguageCode = (lang: string) => {
-    const langMap: { [key: string]: string } = {
-      en: "en-US",
-      ha: "ha-NG",
-      ig: "ig-NG",
-      yo: "yo-NG",
-    };
-    return langMap[lang] || "en-US";
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const addMessage = (
-    text: string,
-    sender: "user" | "ai",
-    language?: string
-  ) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text,
-      sender,
-      timestamp: new Date(),
-      language,
-    };
-    setMessages((prev) => [...prev, newMessage]);
-  };
+  }, [selectedLanguage]);
 
   const startListening = () => {
     if (recognitionRef.current && speechSupported) {

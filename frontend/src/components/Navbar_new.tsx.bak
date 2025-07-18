@@ -1,0 +1,436 @@
+import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Box,
+  IconButton,
+  Menu,
+  MenuItem,          <NavButtonComponent
+            key={item.path}
+            color="inherit"
+            startIcon={item.icon}
+            sx={{
+              animation: `${fadeInDown} 0.5s ease-out ${index * 0.05}s forwards`,
+              opacity: 0,
+            }}
+            onClick={() => navigate(item.path)}
+          >
+            {item.name}
+          </NavButtonComponent>Divider,
+  useTheme,
+  useMediaQuery,
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Chip,
+  Badge,
+  styled,
+} from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import { keyframes } from "@emotion/react";
+import {
+  Menu as MenuIcon,
+  Close as CloseIcon,
+  AccountCircle,
+  Logout,
+  Agriculture,
+  Forum,
+  WbSunny,
+  School,
+  RecordVoiceOver,
+  Home,
+  Camera,
+  Schedule,
+  AttachMoney,
+  Notifications,
+  Person,
+  Dashboard,
+  KeyboardArrowRight,
+} from "@mui/icons-material";
+import { useAuth } from "../contexts/AuthContext";
+
+// Animation keyframes
+const fadeInDown = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+`;
+
+const StyledAppBar = styled(AppBar)(({ theme }) => ({
+  backgroundImage: `linear-gradient(to right, ${theme.palette.background.paper}, ${alpha(theme.palette.primary.dark, 0.85)})`,
+  backdropFilter: 'blur(10px)',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+  animation: `${fadeInDown} 0.5s ease-out`,
+  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+}));
+
+const NavButton = styled(Button)(({ theme }) => ({
+  borderRadius: '8px',
+  margin: '0 4px',
+  padding: '8px 12px',
+  transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+  position: 'relative',
+  overflow: 'hidden',
+  '&:hover': {
+    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+    transform: 'translateY(-2px)',
+  },
+}));
+
+const ActiveNavButton = styled(NavButton)(({ theme }) => ({
+  backgroundColor: alpha(theme.palette.primary.main, 0.15),
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    bottom: 0,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    height: '3px',
+    width: '50%',
+    borderRadius: '3px',
+    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+  },
+}));
+
+const LogoText = styled(Typography)(({ theme }) => ({
+  fontWeight: 700,
+  background: `linear-gradient(45deg, ${theme.palette.secondary.main}, ${theme.palette.primary.light})`,
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+  letterSpacing: 1,
+}));
+
+const StyledMenuItem = styled(MenuItem)(({ theme }) => ({
+  gap: 1.5,
+  transition: 'background 0.2s ease',
+  borderRadius: '8px',
+  margin: '4px 8px',
+  padding: '10px 16px',
+  '&:hover': {
+    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+  },
+}));
+
+const StyledBadge = styled(Badge)(({ theme }) => ({
+  '& .MuiBadge-badge': {
+    backgroundColor: theme.palette.success.main,
+    color: theme.palette.success.contrastText,
+    boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+  },
+}));
+
+const ProfileAvatar = styled(Avatar)(({ theme }) => ({
+  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  border: `2px solid ${alpha(theme.palette.primary.main, 0.5)}`,
+  '&:hover': {
+    transform: 'scale(1.05)',
+    boxShadow: `0 0 0 2px ${theme.palette.primary.main}`,
+  },
+}));
+
+const Navbar: React.FC = () => {
+  const location = useLocation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { user, logout } = useAuth();
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Track scroll position for navbar shadow effect
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      if (isScrolled !== scrolled) {
+        setScrolled(isScrolled);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [scrolled]);
+
+  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    logout();
+    handleMenuClose();
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const navigationItems = [
+    { path: "/", label: "Home", icon: <Home /> },
+    { path: "/dashboard", label: "Dashboard", icon: <Dashboard /> },
+    { path: "/diagnosis", label: "Crop Diagnosis", icon: <Camera /> },
+    { path: "/community", label: "Community", icon: <Forum /> },
+    { path: "/weather", label: "Weather", icon: <WbSunny /> },
+    { path: "/learning", label: "Learning", icon: <School /> },
+    { path: "/voice-chat", label: "Voice Chat", icon: <RecordVoiceOver /> },
+    { path: "/calendar", label: "Calendar", icon: <Schedule /> },
+    { path: "/market", label: "Market", icon: <AttachMoney /> },
+  ];
+
+  const renderNavItems = () => (
+    <>
+      {navigationItems.map((item, index) => {
+        const isActive = location.pathname === item.path;
+        const NavButtonComponent = isActive ? ActiveNavButton : NavButton;
+        
+        return (
+          <NavButtonComponent
+            key={item.path}
+            component={Link as any}
+            to={item.path}
+            color="inherit"
+            startIcon={item.icon}
+            sx={{
+              animation: `${fadeInDown} 0.5s ease-out ${index * 0.05}s forwards`,
+              opacity: 0,
+            }}
+          >
+            {item.label}
+          </NavButtonComponent>
+        );
+      })}
+    </>
+  );
+
+  const menuId = "primary-account-menu";
+  const renderMenu = (
+    <Menu
+      anchorEl={anchorEl}
+      id={menuId}
+      keepMounted
+      transformOrigin={{ vertical: "top", horizontal: "right" }}
+      open={Boolean(anchorEl)}
+      onClose={handleMenuClose}
+      PaperProps={{
+        elevation: 3,
+        sx: {
+          overflow: 'visible',
+          filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.2))',
+          mt: 1.5,
+          borderRadius: 2,
+          minWidth: 180,
+          p: 1,
+          '& .MuiAvatar-root': {
+            width: 32,
+            height: 32,
+            ml: -0.5,
+            mr: 1,
+          },
+        },
+      }}
+    >
+      <StyledMenuItem
+        onClick={handleMenuClose}
+        component={Link as any}
+        to="/profile"
+      >
+        <Person fontSize="small" color="primary" />
+        Profile
+      </StyledMenuItem>
+      <StyledMenuItem
+        onClick={handleMenuClose}
+        component={Link as any}
+        to="/notifications"
+      >
+        <Notifications fontSize="small" color="primary" />
+        Notifications
+      </StyledMenuItem>
+      <Divider sx={{ my: 1 }} />
+      <StyledMenuItem onClick={handleLogout}>
+        <Logout fontSize="small" color="error" />
+        Logout
+      </StyledMenuItem>
+    </Menu>
+  );
+
+  const mobileDrawer = (
+    <Drawer
+      anchor="right"
+      open={mobileMenuOpen}
+      onClose={toggleMobileMenu}
+      PaperProps={{
+        sx: {
+          width: "75%",
+          maxWidth: 280,
+          background: theme.palette.background.paper,
+          backgroundImage: `linear-gradient(to bottom, ${alpha(theme.palette.primary.dark, 0.05)}, ${alpha(theme.palette.background.paper, 0.9)})`,
+        },
+      }}
+    >
+      <Box sx={{ p: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <LogoText variant="h6">AgroPal</LogoText>
+        <IconButton onClick={toggleMobileMenu} color="inherit">
+          <CloseIcon />
+        </IconButton>
+      </Box>
+      <Divider />
+      <Box sx={{ p: 2 }}>
+        <Box sx={{ mb: 2, display: "flex", alignItems: "center", p: 1.5, borderRadius: 2, bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
+          <StyledBadge
+            overlap="circular"
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            variant="dot"
+          >
+            <Avatar 
+              alt={user?.name || "User"} 
+              src={user?.avatar || undefined}
+              sx={{ width: 40, height: 40 }}
+            />
+          </StyledBadge>
+          <Box sx={{ ml: 2 }}>
+            <Typography variant="subtitle1" fontWeight={600} noWrap>
+              {user?.name || "User Name"}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap>
+              {user?.email || "user@example.com"}
+            </Typography>
+          </Box>
+        </Box>
+        <List>
+          {navigationItems.map((item, index) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <ListItem 
+                key={item.path}
+                component={Link as any}
+                to={item.path}
+                onClick={toggleMobileMenu}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  bgcolor: isActive ? alpha(theme.palette.primary.main, 0.15) : "transparent",
+                  color: isActive ? theme.palette.primary.main : theme.palette.text.primary,
+                  animation: `${fadeIn} 0.3s ease-out ${index * 0.05 + 0.1}s both`,
+                  '&:hover': {
+                    bgcolor: isActive ? alpha(theme.palette.primary.main, 0.2) : alpha(theme.palette.primary.main, 0.1),
+                  }
+                }}
+              >
+                <ListItemIcon 
+                  sx={{ 
+                    minWidth: 40, 
+                    color: isActive ? theme.palette.primary.main : theme.palette.text.primary 
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText primary={item.label} />
+                {isActive && (
+                  <KeyboardArrowRight color="primary" fontSize="small" />
+                )}
+              </ListItem>
+            );
+          })}
+        </List>
+      </Box>
+      <Divider sx={{ mt: 'auto' }} />
+      <MenuItem onClick={handleLogout} sx={{ m: 2, borderRadius: 2 }}>
+        <ListItemIcon>
+          <Logout fontSize="small" color="error" />
+        </ListItemIcon>
+        <ListItemText>Logout</ListItemText>
+      </MenuItem>
+    </Drawer>
+  );
+
+  return (
+    <StyledAppBar 
+      position="sticky" 
+      color="transparent" 
+      sx={{
+        boxShadow: scrolled ? 4 : 0,
+        transition: "box-shadow 0.3s ease",
+      }}
+    >
+      <Toolbar sx={{ justifyContent: "space-between" }}>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <LogoText variant={isMobile ? "h6" : "h5"} sx={{ mr: 2 }}>
+            AgroPal
+          </LogoText>
+          {!isMobile && <Box sx={{ display: "flex" }}>{renderNavItems()}</Box>}
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          {!isMobile && (
+            <IconButton
+              component={Link as any}
+              to="/notifications"
+              size="large"
+              color="inherit"
+              sx={{
+                mr: 2,
+                animation: `${fadeIn} 0.5s ease-out 0.4s forwards`,
+                opacity: 0,
+                transition: "transform 0.2s",
+                "&:hover": { transform: "translateY(-2px)" },
+              }}
+            >
+              <Badge badgeContent={3} color="error">
+                <Notifications />
+              </Badge>
+            </IconButton>
+          )}
+          <ProfileAvatar
+            alt={user?.name || "User"}
+            src={user?.avatar || undefined}
+            onClick={handleProfileMenuOpen}
+            sx={{ 
+              cursor: "pointer",
+              animation: `${fadeIn} 0.5s ease-out 0.5s forwards`,
+              opacity: 0,
+            }}
+          />
+          {isMobile && (
+            <IconButton
+              color="inherit"
+              onClick={toggleMobileMenu}
+              sx={{
+                ml: 1,
+                animation: `${fadeIn} 0.5s ease-out 0.6s forwards`,
+                opacity: 0,
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+        </Box>
+      </Toolbar>
+      {renderMenu}
+      {mobileDrawer}
+    </StyledAppBar>
+  );
+};
+
+export default Navbar;

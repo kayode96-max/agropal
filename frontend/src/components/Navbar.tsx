@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   AppBar,
@@ -20,7 +20,10 @@ import {
   ListItemIcon,
   Chip,
   Badge,
+  styled,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import { keyframes } from "@emotion/react";
 import {
   Menu as MenuIcon,
   Close as CloseIcon,
@@ -41,6 +44,60 @@ import {
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
 
+// Animation keyframes
+const fadeInDown = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const StyledAppBar = styled(AppBar)(({ theme }) => ({
+  backgroundImage: `linear-gradient(to right, ${theme.palette.background.paper}, ${alpha(theme.palette.primary.dark, 0.85)})`,
+  backdropFilter: 'blur(10px)',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+  animation: `${fadeInDown} 0.5s ease-out`,
+  borderBottom: `1px solid ${theme.palette.divider}`,
+}));
+
+const NavButton = styled(Button)<{ active?: boolean; component?: any; to?: string }>(({ theme, active }) => ({
+  borderRadius: '8px',
+  margin: '0 4px',
+  padding: '8px 12px',
+  transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+  position: 'relative',
+  overflow: 'hidden',
+  backgroundColor: active ? alpha(theme.palette.primary.main, 0.15) : 'transparent',
+  '&:hover': {
+    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+    transform: 'translateY(-2px)',
+  },
+  '&::after': active ? {
+    content: '""',
+    position: 'absolute',
+    bottom: 0,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    height: '3px',
+    width: '50%',
+    borderRadius: '3px',
+    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+  } : {},
+}));
+
+const LogoText = styled(Typography)(({ theme }) => ({
+  fontWeight: 700,
+  background: `linear-gradient(45deg, ${theme.palette.secondary.main}, ${theme.palette.primary.light})`,
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+  letterSpacing: 1,
+}));
+
 const Navbar: React.FC = () => {
   const location = useLocation();
   const theme = useTheme();
@@ -49,6 +106,20 @@ const Navbar: React.FC = () => {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Track scroll position for navbar shadow effect
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      if (isScrolled !== scrolled) {
+        setScrolled(isScrolled);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [scrolled]);
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -77,27 +148,25 @@ const Navbar: React.FC = () => {
 
   const renderNavItems = () => (
     <>
-      {navigationItems.map((item) => (
-        <Button
-          key={item.path}
-          component={Link}
-          to={item.path}
-          color="inherit"
-          startIcon={item.icon}
-          sx={{
-            mx: 0.5,
-            backgroundColor:
-              location.pathname === item.path
-                ? "rgba(255, 255, 255, 0.1)"
-                : "transparent",
-            "&:hover": {
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-            },
-          }}
-        >
-          {item.label}
-        </Button>
-      ))}
+      {navigationItems.map((item, index) => {
+        const isActive = location.pathname === item.path;
+        return (
+          <NavButton
+            key={item.path}
+            component={Link}
+            to={item.path}
+            color="inherit"
+            active={isActive}
+            startIcon={item.icon}
+            sx={{
+              animation: `${fadeInDown} 0.5s ease-out ${index * 0.05}s forwards`,
+              opacity: 0,
+            }}
+          >
+            {item.label}
+          </NavButton>
+        );
+      })}
     </>
   );
 

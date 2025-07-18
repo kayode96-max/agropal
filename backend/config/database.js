@@ -1,6 +1,13 @@
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
+  // Skip MongoDB connection if SKIP_MONGODB is set
+  if (process.env.SKIP_MONGODB === 'true') {
+    console.log("⚠️  MongoDB connection skipped for development mode");
+    console.log("🔧 Using mock data and in-memory storage");
+    return null;
+  }
+
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI);
 
@@ -12,6 +19,7 @@ const connectDB = async () => {
     return conn;
   } catch (error) {
     console.error("❌ MongoDB connection error:", error.message);
+    console.log("💡 Tip: Set SKIP_MONGODB=true in .env to use mock data for development");
     process.exit(1);
   }
 };
