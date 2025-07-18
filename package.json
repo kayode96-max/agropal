@@ -5,13 +5,13 @@
   "main": "index.js",
   "scripts": {
     "install:backend": "cd backend && npm install",
-    "install:frontend": "cd frontend && npm install",
+    "install:frontend": "cd frontend && npm install --legacy-peer-deps",
     "install:all": "npm run install:backend && npm run install:frontend",
     "start:backend": "cd backend && npm start",
     "start:frontend": "cd frontend && npm start",
     "dev:backend": "cd backend && npm run dev",
     "dev": "npm run dev:backend",
-    "build": "cd frontend && npm run build",
+    "build": "npm run install:frontend && cd frontend && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
