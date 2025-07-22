@@ -5,7 +5,7 @@
 The project is properly configured for deployment with the following setup:
 
 ### Output Directory
-- **Location**: `frontend/build`
+- **Location**: `public` (at project root)
 - **Framework**: Create React App
 - **Build Command**: `npm run build`
 
@@ -16,7 +16,7 @@ The project is properly configured for deployment with the following setup:
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": "frontend/build",
+  "outputDirectory": "public",
   "installCommand": "npm install --legacy-peer-deps",
   "framework": "create-react-app",
   "builds": [
@@ -24,7 +24,7 @@ The project is properly configured for deployment with the following setup:
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "frontend/build"
+        "distDir": "public"
       }
     }
   ],
@@ -40,8 +40,9 @@ The project is properly configured for deployment with the following setup:
 ### Build Process
 
 1. **Install Dependencies**: Runs `npm install --legacy-peer-deps` in frontend
-2. **Build React App**: Creates optimized production build
-3. **Output**: Static files in `frontend/build` directory
+2. **Build React App**: Creates optimized production build in `frontend/build`
+3. **Copy to Public**: Copies build files to `public` directory at project root
+4. **Output**: Static files in `public` directory ready for deployment
 
 ### Verification Commands
 
@@ -53,16 +54,16 @@ The project is properly configured for deployment with the following setup:
 
 For **Vercel**:
 - Build Command: `npm run build`
-- Output Directory: `frontend/build`
+- Output Directory: `public`
 - Install Command: `npm install --legacy-peer-deps`
 
 For **Netlify**:
 - Build Command: `npm run build`
-- Publish Directory: `frontend/build`
+- Publish Directory: `public`
 
 For **GitHub Pages**:
 - Build Command: `npm run build`
-- Deploy from: `frontend/build`
+- Deploy from: `public`
 
 ### Troubleshooting
 
@@ -85,11 +86,12 @@ This error typically means:
 
 ```
 agropal/
+├── public/              ← Deploy this directory
+│   ├── index.html
+│   ├── static/
+│   └── ...
 ├── frontend/
-│   ├── build/           ← Deploy this directory
-│   │   ├── index.html
-│   │   ├── static/
-│   │   └── ...
+│   ├── build/          ← Intermediate build output
 │   ├── src/
 │   └── package.json
 ├── backend/
@@ -102,8 +104,9 @@ agropal/
 
 The build error has been resolved. The project now:
 - ✅ Builds successfully
-- ✅ Creates correct output directory
+- ✅ Creates correct output directory (`public`)
 - ✅ Has proper deployment configuration
 - ✅ Includes verification tools
+- ✅ Follows Vercel's expected structure
 
-Run `npm run build` and deploy the `frontend/build` directory.
+Run `npm run build` and deploy the `public` directory.

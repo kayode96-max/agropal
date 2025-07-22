@@ -4,30 +4,30 @@ echo "🔍 Agropal Deployment Check"
 echo "============================"
 
 # Check if build directory exists
-if [ -d "frontend/build" ]; then
-    echo "✅ Build directory exists: frontend/build"
+if [ -d "public" ]; then
+    echo "✅ Build directory exists: public"
     
     # Check if essential files exist
-    if [ -f "frontend/build/index.html" ]; then
+    if [ -f "public/index.html" ]; then
         echo "✅ index.html found"
     else
         echo "❌ index.html missing"
         exit 1
     fi
     
-    if [ -f "frontend/build/asset-manifest.json" ]; then
+    if [ -f "public/asset-manifest.json" ]; then
         echo "✅ asset-manifest.json found"
     else
         echo "❌ asset-manifest.json missing"
         exit 1
     fi
     
-    if [ -d "frontend/build/static" ]; then
+    if [ -d "public/static" ]; then
         echo "✅ static directory found"
         
         # Count JS and CSS files
-        js_files=$(find frontend/build/static -name "*.js" | wc -l)
-        css_files=$(find frontend/build/static -name "*.css" | wc -l)
+        js_files=$(find public/static -name "*.js" | wc -l)
+        css_files=$(find public/static -name "*.css" | wc -l)
         
         echo "📄 Found $js_files JS files and $css_files CSS files"
         
@@ -45,15 +45,15 @@ if [ -d "frontend/build" ]; then
     echo ""
     echo "📊 Build Summary:"
     echo "=================="
-    ls -lah frontend/build/
+    ls -lah public/
     
     echo ""
     echo "🚀 Ready for deployment!"
-    echo "   Output Directory: frontend/build"
+    echo "   Output Directory: public"
     echo "   Framework: Create React App"
     
 else
-    echo "❌ Build directory not found: frontend/build"
+    echo "❌ Build directory not found: public"
     echo "   Run 'npm run build' first"
     exit 1
 fi

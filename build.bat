@@ -51,6 +51,17 @@ if %errorlevel% neq 0 (
 )
 echo ✓ Frontend build completed successfully
 
+REM Copy build to public directory
+echo ✓ Copying build files to public directory...
+if not exist "..\public" mkdir "..\public"
+xcopy /E /Y build\* "..\public\"
+if %errorlevel% neq 0 (
+    echo ✗ Failed to copy build files to public directory
+    pause
+    exit /b 1
+)
+echo ✓ Build files copied to public directory successfully
+
 REM Go back to root directory
 cd ..
 
@@ -67,7 +78,7 @@ echo.
 echo 🚀 Next Steps:
 echo 1. Update backend\.env with your production values
 echo 2. Start the backend server: cd backend ^&^& npm start
-echo 3. Your frontend is built and ready in frontend\build\
+echo 3. Your frontend is built and ready in public\ directory
 echo 4. Deploy to your hosting platform
 echo.
 echo 💡 For development:

@@ -69,8 +69,17 @@ else
     exit 1
 fi
 
-# Go back to root directory
+# Copy build to public directory
+print_status "Copying build files to public directory..."
 cd ..
+mkdir -p public
+cp -r frontend/build/* public/
+if [ $? -eq 0 ]; then
+    print_status "Build files copied to public directory successfully"
+else
+    print_error "Failed to copy build files to public directory"
+    exit 1
+fi
 
 # Create production environment file if it doesn't exist
 if [ ! -f "backend/.env" ]; then
@@ -86,7 +95,7 @@ echo ""
 echo "🚀 Next Steps:"
 echo "1. Update backend/.env with your production values"
 echo "2. Start the backend server: cd backend && npm start"
-echo "3. Your frontend is built and ready in frontend/build/"
+echo "3. Your frontend is built and ready in public/ directory"
 echo "4. Deploy to your hosting platform"
 echo ""
 echo "💡 For development:"
