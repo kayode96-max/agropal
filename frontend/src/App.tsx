@@ -2,18 +2,16 @@ import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import { Box, GlobalStyles, useMediaQuery } from "@mui/material";
-// Import custom notification context without using notistack
+import { Box, GlobalStyles } from "@mui/material";
+// Import custom notification context
 import { NotificationProvider } from './contexts/NotificationContext';
 import { alpha } from "@mui/material/styles";
 
 // Import theme
 import theme from './theme/darkTheme';
 
-// Import custom UI components
-import { AnimatedBackground } from './components/ui';
-
 // Import components
+import ErrorBoundary from "./components/ErrorBoundary";
 import Navbar from "./components/Navbar_new";
 import Footer from "./components/Footer";
 import AuthWrapper from "./components/AuthWrapper";
@@ -29,8 +27,6 @@ import CropCalendar from "./pages/CropCalendar";
 import MarketPrices from "./pages/MarketPrices";
 import NotificationsPage from "./pages/NotificationsPage";
 import ProfilePage from "./pages/ProfilePage";
-
-// Theme is now imported from /theme/darkTheme.ts
 
 // Global styles for beautiful effects
 const globalStyles = {
@@ -92,70 +88,72 @@ function App() {
     });
   }, []);
 
-  // Use lighter animations on mobile devices for better performance
-  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
-  const animationIntensity = isDesktop ? 'medium' : 'light';
-
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <GlobalStyles styles={globalStyles} />
-      <div className="bg-pattern" />
-      <AnimatedBackground 
-        variant="particles" 
-        intensity={animationIntensity} 
-      />
-      <NotificationProvider>
-        <AuthProvider>
-          <Router>
-            <AuthWrapper>
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  minHeight: "100vh",
-                  overflow: "hidden", // Prevent horizontal scrolling
-                  position: "relative", // For background effects
-                  background: "transparent",
-                }}
-              >
-              <Navbar />
-              <Box 
-                component="main" 
-                sx={{ 
-                  flexGrow: 1, 
-                  pt: { xs: 3, sm: 4 }, 
-                  px: { xs: 2, sm: 3, md: 4 },
-                  transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
-                  position: "relative",
-                  zIndex: 1,
-                }}
-                className="page-container fadeIn"
-              >
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/diagnosis" element={<CropDiagnosis />} />
-                  <Route path="/community" element={<Community />} />
-                  <Route path="/weather" element={<Weather />} />
-                  <Route path="/learning" element={<Learning />} />
-                  <Route path="/voice-chat" element={<VoiceChat />} />
-                  <Route path="/calendar" element={<CropCalendar />} />
-                  <Route path="/market" element={<MarketPrices />} />
-                  <Route
-                    path="/notifications"
-                    element={<NotificationsPage />}
-                  />
-                  <Route path="/profile" element={<ProfilePage />} />
-                </Routes>
-              </Box>
-              <Footer />
-            </Box>
-          </AuthWrapper>
-        </Router>
-      </AuthProvider>
-    </NotificationProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <GlobalStyles styles={globalStyles} />
+        <div className="bg-pattern" />
+        <NotificationProvider>
+          <AuthProvider>
+            <Router>
+              <ErrorBoundary>
+                <AuthWrapper>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      minHeight: "100vh",
+                      overflow: "hidden",
+                      position: "relative",
+                      background: "transparent",
+                    }}
+                  >
+                    <ErrorBoundary>
+                      <Navbar />
+                    </ErrorBoundary>
+                    <Box 
+                      component="main" 
+                      sx={{ 
+                        flexGrow: 1, 
+                        pt: { xs: 3, sm: 4 }, 
+                        px: { xs: 2, sm: 3, md: 4 },
+                        transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+                        position: "relative",
+                        zIndex: 1,
+                      }}
+                      className="page-container fadeIn"
+                    >
+                      <ErrorBoundary>
+                        <Routes>
+                          <Route path="/" element={<Home />} />
+                          <Route path="/dashboard" element={<Dashboard />} />
+                          <Route path="/diagnosis" element={<CropDiagnosis />} />
+                          <Route path="/community" element={<Community />} />
+                          <Route path="/weather" element={<Weather />} />
+                          <Route path="/learning" element={<Learning />} />
+                          <Route path="/voice-chat" element={<VoiceChat />} />
+                          <Route path="/calendar" element={<CropCalendar />} />
+                          <Route path="/market" element={<MarketPrices />} />
+                          <Route
+                            path="/notifications"
+                            element={<NotificationsPage />}
+                          />
+                          <Route path="/profile" element={<ProfilePage />} />
+                        </Routes>
+                      </ErrorBoundary>
+                    </Box>
+                    <ErrorBoundary>
+                      <Footer />
+                    </ErrorBoundary>
+                  </Box>
+                </AuthWrapper>
+              </ErrorBoundary>
+            </Router>
+          </AuthProvider>
+        </NotificationProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
